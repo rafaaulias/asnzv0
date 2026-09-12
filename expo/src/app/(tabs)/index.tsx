@@ -33,10 +33,10 @@ function challengeSummary(alarm: Alarm) {
   return alarm.challengeType === 'math' ? `Math puzzle · ${alarm.mathDifficulty}` : `Shake to wake · ${alarm.shakeCountTarget}x`;
 }
 
-function AlarmCard({ alarm, onToggle, onPress }: { alarm: Alarm; onToggle: (value: boolean) => void; onPress: () => void }) {
+function AlarmCard({ alarm, onToggle, onPress, onTest }: { alarm: Alarm; onToggle: (value: boolean) => void; onPress: () => void; onTest: () => void }) {
   const { hour, minute, period } = formatTime(alarm.time);
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, !alarm.enabled && styles.cardInactive, pressed && { opacity: 0.85 }]}>
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>
           <View style={styles.timeRow}>
@@ -58,9 +58,10 @@ function AlarmCard({ alarm, onToggle, onPress }: { alarm: Alarm; onToggle: (valu
             </View>
           ))}
         </View>
-        <Text style={styles.test}>
-          TEST <Ionicons name="play" size={10} color={colors.label} />
-        </Text>
+        <Pressable onPress={onTest} hitSlop={8} style={styles.testButton} accessibilityRole="button" accessibilityLabel={`Test ${alarm.label} alarm`}>
+          <Ionicons name="play" size={10} color={alarm.enabled ? colors.label : colors.faintText} />
+          <Text style={[styles.test, !alarm.enabled && styles.inactiveText]}>Test</Text>
+        </Pressable>
       </View>
     </Pressable>
   );
@@ -98,7 +99,8 @@ export default function AlarmsScreen() {
             key={alarm.id}
             alarm={alarm}
             onToggle={(value) => toggle(alarm.id, value)}
-            onPress={() => router.push({ pathname: '/active-alarm', params: { alarmId: alarm.id } })}
+            onPress={() => router.push({ pathname: '/alarm-form', params: { alarmId: alarm.id } })}
+            onTest={() => router.push({ pathname: '/active-alarm', params: { alarmId: alarm.id } })}
           />
         ))
       )}
@@ -113,7 +115,8 @@ export default function AlarmsScreen() {
               key={alarm.id}
               alarm={alarm}
               onToggle={(value) => toggle(alarm.id, value)}
-              onPress={() => router.push({ pathname: '/active-alarm', params: { alarmId: alarm.id } })}
+              onPress={() => router.push({ pathname: '/alarm-form', params: { alarmId: alarm.id } })}
+              onTest={() => router.push({ pathname: '/active-alarm', params: { alarmId: alarm.id } })}
             />
           ))}
         </>
@@ -126,6 +129,7 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   empty: { ...type.subhead, textAlign: 'center', paddingVertical: spacing.xl },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card },
+  cardInactive: { backgroundColor: '#F4F4F4', borderColor: '#E8E8E8', shadowOpacity: 0.02 },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   timeRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   time: { fontSize: 44, fontWeight: '800', color: colors.ink, letterSpacing: -2 },
@@ -138,5 +142,7 @@ const styles = StyleSheet.create({
   dayActive: { backgroundColor: colors.ink },
   dayText: { fontSize: 10, fontWeight: '800', color: colors.dayInactiveText },
   dayTextActive: { color: colors.paper },
-  test: { ...type.caption },
+  testButton: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 7, borderRadius: radius.full, backgroundColor: colors.paper },
+  test: { ...type.caption, fontSize: 11 },
+  inactiveText: { color: colors.faintText },
 });

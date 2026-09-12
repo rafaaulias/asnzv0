@@ -38,8 +38,8 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   useEffect(() => {
     const target = layouts.current[state.index];
     if (!target) return;
-    indicatorX.set(withSpring(target.x, { duration: 300, dampingRatio: 0.8 }));
-    indicatorWidth.set(withSpring(target.width, { duration: 300, dampingRatio: 0.8 }));
+    indicatorX.set(withSpring(target.x, { damping: 13, stiffness: 140, mass: 1.1 }));
+    indicatorWidth.set(withSpring(target.width, { damping: 13, stiffness: 140, mass: 1.1 }));
   }, [state.index]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
@@ -68,8 +68,8 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               }}
               style={styles.tab}
             >
-              <Ionicons name={isFocused ? icon.active : icon.inactive} size={18} color={isFocused ? colors.paper : colors.ink} />
-              <Text style={[styles.label, { color: isFocused ? colors.paper : colors.ink }]}>{label}</Text>
+              <Ionicons name={isFocused ? icon.active : icon.inactive} size={18} color={isFocused ? colors.paper : colors.muted} />
+              <Text style={[styles.label, { color: isFocused ? colors.paper : colors.muted }]}>{label}</Text>
             </Pressable>
           );
         })}
@@ -85,5 +85,5 @@ const styles = StyleSheet.create({
   row: { paddingHorizontal: 6 },
   indicator: { position: 'absolute', top: 6, bottom: 6, left: 0, borderRadius: radius.full, backgroundColor: colors.ink },
   tab: { flex: 1, height: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  label: { fontSize: 13, fontWeight: '700' },
+  label: { fontSize: 12, fontWeight: '500' },
 });
