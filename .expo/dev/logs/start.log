@@ -1,0 +1,8 @@
+{"_e":"root:init","_t":1789217534549,"format":"v0-jsonl","version":"57.0.24"}
+{"_e":"env:mode","_t":1789217534550,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789217534552,"mode":"development","files":["../../../.env.development.local"],"env":{"AI_GATEWAY_API_KEY":"v0-ai-gateway-proxy-key-sentinel.do-not-edit.the-proxy-swaps-this-value","V0_BUILD_URL":"https://anti-snooze.v0.build","V0_CALLBACK_URL":"https://callback.v0.app/?v0CallbackPath=&v0UserId=5BfNQGgOqUcfVXHqUTDP2mMI&v0ChatId=lVYz2vWXyIx","V0_RUNTIME_URL":"https://anti-snooze.v0.build","V0_SANDBOX_URL":"https://sb-1gku98tk0dh1.vercel.run"}}
+{"_e":"devserver:start","_t":1789217534691,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789217534942,"serverRoot":"../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789217535188,"plugins":[]}
+{"_e":"metro:server_log","_t":1789217538898,"level":"error","data":["An unknown error occurred while installing React Native DevTools. Details:\n\n/home/vercel-sandbox/.npm/_npx/249ca9fcd30c476a/node_modules/@react-native/debugger-shell/bin/react-native-devtools: error while loading shared libraries: libnspr4.so: cannot open shared object file: No such file or directory\n"]}
+{"_e":"metro:instantiate","_t":1789217542441,"atlas":false,"workers":1,"host":"::","port":8081}
