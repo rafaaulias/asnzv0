@@ -1,23 +1,142 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { AppScreen } from '@/components/app-screen';
 import { colors, radius, shadow, spacing, type } from '@/theme';
 import { Alarm, loadAlarms, saveAlarms } from '@/services/storage';
 
-export default function AlarmsScreen() {
-  const [alarms, setAlarms] = useState<Alarm[]>([]); const router = useRouter();
-  useEffect(() => { loadAlarms().then(setAlarms); }, []);
-  const toggle = (id: string, enabled: boolean) => { const next = alarms.map((alarm) => alarm.id === id ? { ...alarm, enabled } : alarm); setAlarms(next); saveAlarms(next); };
-  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.content}>
-    <View style={styles.header}><View><Text style={type.largeTitle}>Alarms</Text><Text style={styles.subtitle}>Build a morning you can&apos;t snooze.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Add alarm" style={styles.add} onPress={() => Alert.alert('Add alarm', 'Alarm editor is next in the native migration.') }><Ionicons name="add" size={25} color={colors.paper} /></Pressable></View>
-    <View style={styles.sectionHeader}><Text style={type.caption}>ACTIVE</Text><Text style={type.caption}>Offline & private</Text></View>
-    {alarms.map((alarm) => <Pressable key={alarm.id} onPress={() => router.push({ pathname: '/active-alarm', params: { alarmId: alarm.id } })} style={({ pressed }) => [styles.card, { opacity: pressed ? 0.82 : alarm.enabled ? 1 : 0.58 }]}>
-      <View style={styles.row}><View style={{ flex: 1 }}><View style={styles.timeRow}><Text style={styles.time}>{alarm.time}</Text><Text style={styles.period}>AM</Text></View><Text style={styles.label}>{alarm.label} · {alarm.challengeType === 'math' ? `Math (${alarm.mathDifficulty})` : `Shake (${alarm.shakeCountTarget}x)`}</Text></View><Switch value={alarm.enabled} onValueChange={(value) => toggle(alarm.id, value)} trackColor={{ false: '#D8D8D8', true: colors.ink }} thumbColor={colors.paper} /></View>
-      <View style={styles.divider} /><View style={styles.bottom}><View style={styles.days}>{alarm.days.map((day, index) => <View key={`${day}-${index}`} style={[styles.day, alarm.enabled && styles.dayActive]}><Text style={[styles.dayText, alarm.enabled && styles.dayTextActive]}>{day}</Text></View>)}</View><Text style={styles.test}>TEST <Ionicons name="play" size={10} color={colors.muted} /></Text></View>
-    </Pressable>)}
-    <View style={styles.privacy}><Ionicons name="shield-checkmark-outline" size={18} color={colors.ink} /><Text style={styles.privacyText}>No cloud. No tracking. Your alarms stay on this device.</Text></View>
-    <Link href="/active-alarm" asChild><Pressable style={styles.debug}><Text style={styles.debugText}>Preview active alarm</Text><Ionicons name="arrow-forward" size={16} color={colors.paper} /></Pressable></Link>
-  </ScrollView></SafeAreaView>;
+function formatTime(time24: string) {
+  const [hourRaw, minute] = time24.split(':');
+  const hour = Number(hourRaw);
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return { hour: String(hour12).padStart(2, '0'), minute, period };
 }
-const styles = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.paper }, content: { padding: spacing.lg, gap: spacing.md }, header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: spacing.sm }, subtitle: { ...type.subhead, marginTop: spacing.xs }, add: { width: 46, height: 46, borderRadius: radius.full, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' }, sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.lg }, card: { backgroundColor: colors.paper, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.line, ...shadow.card }, row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm }, timeRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 }, time: { fontSize: 42, fontWeight: '800', color: colors.ink, letterSpacing: -2 }, period: { ...type.caption, color: colors.muted }, label: { ...type.subhead, marginTop: 2 }, divider: { height: 1, backgroundColor: colors.line, marginVertical: spacing.md }, bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, days: { flexDirection: 'row', gap: 5 }, day: { width: 25, height: 25, borderRadius: 13, backgroundColor: colors.soft, alignItems: 'center', justifyContent: 'center' }, dayActive: { backgroundColor: colors.ink }, dayText: { fontSize: 10, fontWeight: '800', color: colors.muted }, dayTextActive: { color: colors.paper }, test: { ...type.caption }, privacy: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center', backgroundColor: colors.soft, padding: spacing.md, borderRadius: radius.md, marginTop: spacing.sm }, privacyText: { ...type.caption, flex: 1 }, debug: { backgroundColor: colors.ink, borderRadius: radius.md, padding: spacing.md, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }, debugText: { color: colors.paper, fontWeight: '800' } });
+
+function minutesUntil(time24: string) {
+  const [hour, minute] = time24.split(':').map(Number);
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(hour, minute, 0, 0);
+  if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 1);
+  return Math.round((target.getTime() - now.getTime()) / 60000);
+}
+
+function formatCountdown(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${minutes}m`;
+}
+
+function challengeSummary(alarm: Alarm) {
+  return alarm.challengeType === 'math' ? `Math puzzle · ${alarm.mathDifficulty}` : `Shake to wake · ${alarm.shakeCountTarget}x`;
+}
+
+function AlarmCard({ alarm, onToggle, onPress }: { alarm: Alarm; onToggle: (value: boolean) => void; onPress: () => void }) {
+  const { hour, minute, period } = formatTime(alarm.time);
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}>
+      <View style={styles.cardTop}>
+        <View style={{ flex: 1 }}>
+          <View style={styles.timeRow}>
+            <Text style={styles.time}>{hour}:{minute}</Text>
+            <Text style={styles.period}>{period}</Text>
+          </View>
+          <Text style={styles.label}>
+            {alarm.label} · {challengeSummary(alarm)}
+          </Text>
+        </View>
+        <Switch value={alarm.enabled} onValueChange={onToggle} trackColor={{ false: colors.disabled, true: colors.ink }} thumbColor={colors.paper} />
+      </View>
+      <View style={styles.divider} />
+      <View style={styles.cardBottom}>
+        <View style={styles.days}>
+          {alarm.days.map((day, index) => (
+            <View key={`${day}-${index}`} style={[styles.day, alarm.enabled && styles.dayActive]}>
+              <Text style={[styles.dayText, alarm.enabled && styles.dayTextActive]}>{day}</Text>
+            </View>
+          ))}
+        </View>
+        <Text style={styles.test}>
+          TEST <Ionicons name="play" size={10} color={colors.label} />
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+export default function AlarmsScreen() {
+  const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    loadAlarms().then(setAlarms);
+  }, []);
+
+  const toggle = (id: string, enabled: boolean) => {
+    const next = alarms.map((alarm) => (alarm.id === id ? { ...alarm, enabled } : alarm));
+    setAlarms(next);
+    saveAlarms(next);
+  };
+
+  const active = alarms.filter((alarm) => alarm.enabled);
+  const inactive = alarms.filter((alarm) => !alarm.enabled);
+  const nextIn = active.length ? formatCountdown(Math.min(...active.map((alarm) => minutesUntil(alarm.time)))) : null;
+
+  return (
+    <AppScreen onAddPress={() => router.push('/alarm-form' as never)}>
+      <View style={styles.sectionHeader}>
+        <Text style={type.subhead}>Active</Text>
+        {nextIn ? <Text style={type.subhead}>Next: {nextIn}</Text> : null}
+      </View>
+      {active.length === 0 ? (
+        <Text style={styles.empty}>No active alarms. Tap + above to create or toggle an alarm on.</Text>
+      ) : (
+        active.map((alarm) => (
+          <AlarmCard
+            key={alarm.id}
+            alarm={alarm}
+            onToggle={(value) => toggle(alarm.id, value)}
+            onPress={() => router.push({ pathname: '/active-alarm', params: { alarmId: alarm.id } })}
+          />
+        ))
+      )}
+
+      {inactive.length > 0 ? (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text style={type.subhead}>Inactive</Text>
+          </View>
+          {inactive.map((alarm) => (
+            <AlarmCard
+              key={alarm.id}
+              alarm={alarm}
+              onToggle={(value) => toggle(alarm.id, value)}
+              onPress={() => router.push({ pathname: '/active-alarm', params: { alarmId: alarm.id } })}
+            />
+          ))}
+        </>
+      ) : null}
+    </AppScreen>
+  );
+}
+
+const styles = StyleSheet.create({
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  empty: { ...type.subhead, textAlign: 'center', paddingVertical: spacing.xl },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  timeRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  time: { fontSize: 44, fontWeight: '800', color: colors.ink, letterSpacing: -2 },
+  period: { ...type.caption },
+  label: { ...type.subhead, marginTop: 2 },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+  cardBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  days: { flexDirection: 'row', gap: 5 },
+  day: { width: 25, height: 25, borderRadius: 13, backgroundColor: colors.dayInactiveBg, alignItems: 'center', justifyContent: 'center' },
+  dayActive: { backgroundColor: colors.ink },
+  dayText: { fontSize: 10, fontWeight: '800', color: colors.dayInactiveText },
+  dayTextActive: { color: colors.paper },
+  test: { ...type.caption },
+});
