@@ -1,0 +1,3 @@
+{
+  "compilerOptions": {"strict": true, "jsx": "react-jsx", "moduleResolution": "bundler", "module": "esnext", "target": "es2020", "paths": {"@/*": ["./src/*"]}, "allowJs": false, "skipLibCheck": true}
+}

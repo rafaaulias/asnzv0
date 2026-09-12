@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Anti-Snooze",
+    "slug": "anti-snooze",
+    "scheme": "anti-snooze",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router", "expo-notifications", "expo-audio"],
+    "android": {"package": "com.antisnooze.alarm", "permissions": ["SCHEDULE_EXACT_ALARM", "USE_EXACT_ALARM", "WAKE_LOCK", "RECEIVE_BOOT_COMPLETED", "VIBRATE", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_MEDIA_PLAYBACK", "SYSTEM_ALERT_WINDOW"]},
+    "ios": {"bundleIdentifier": "com.antisnooze.alarm", "infoPlist": {"NSMotionUsageDescription": "Anti-Snooze uses motion to verify shake challenges.", "UIBackgroundModes": ["audio", "fetch"]}},
+    "experiments": {"typedRoutes": true}
+  }
+}
