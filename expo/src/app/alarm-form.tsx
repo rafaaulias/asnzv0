@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TimeWheel } from '@/components/time-wheel';
 import { usePageMargin } from '@/hooks/use-page-margin';
 import { Alarm, ChallengeType, loadAlarms, saveAlarms } from '@/services/storage';
@@ -19,13 +19,30 @@ const CHALLENGES: { type: ChallengeType; icon: keyof typeof Ionicons.glyphMap; t
 
 export default function AlarmForm() {
   const router = useRouter();
+  const { alarmId } = useLocalSearchParams<{ alarmId?: string }>();
   const margin = usePageMargin();
+  const isEditing = Boolean(alarmId);
   const [hour, setHour] = useState('06');
   const [minute, setMinute] = useState('30');
   const [period, setPeriod] = useState<'AM' | 'PM'>('AM');
   const [days, setDays] = useState<boolean[]>(DEFAULT_DAYS);
   const [label, setLabel] = useState('');
   const [challengeType, setChallengeType] = useState<ChallengeType>('math');
+
+  useEffect(() => {
+    if (!alarmId) return;
+    loadAlarms().then((items) => {
+      const alarm = items.find((item) => item.id === alarmId);
+      if (!alarm) return;
+      const [hour24, minuteValue] = alarm.time.split(':').map(Number);
+      setHour(String(hour24 % 12 || 12).padStart(2, '0'));
+      setMinute(String(minuteValue).padStart(2, '0'));
+      setPeriod(hour24 >= 12 ? 'PM' : 'AM');
+      setLabel(alarm.label);
+      setChallengeType(alarm.challengeType);
+      setDays(DAY_LETTERS.map((day) => alarm.days.includes(day)));
+    });
+  }, [alarmId]);
 
   const toggleDay = (index: number) => setDays((prev) => prev.map((value, i) => (i === index ? !value : value)));
 
@@ -34,7 +51,7 @@ export default function AlarmForm() {
     const hour24 = period === 'AM' ? hourNumber : hourNumber + 12;
     const selectedDays = DAY_LETTERS.filter((_, i) => days[i]);
     const newAlarm: Alarm = {
-      id: `alarm-${Date.now()}`,
+      id: alarmId ?? `alarm-${Date.now()}`,
       time: `${String(hour24).padStart(2, '0')}:${minute}`,
       label: label.trim() || 'Wake Up',
       enabled: true,
@@ -46,7 +63,8 @@ export default function AlarmForm() {
       volume: 80,
     };
     const current = await loadAlarms();
-    await saveAlarms([...current, newAlarm]);
+    const next = isEditing ? current.map((alarm) => (alarm.id === newAlarm.id ? { ...alarm, ...newAlarm } : alarm)) : [...current, newAlarm];
+    await saveAlarms(next);
     router.back();
   };
 
@@ -56,7 +74,7 @@ export default function AlarmForm() {
         <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} style={styles.roundButton}>
           <Ionicons name="close" size={20} color={colors.ink} />
         </Pressable>
-        <Text style={type.headline}>New Alarm</Text>
+        <Text style={type.headline}>{isEditing ? 'Edit Alarm' : 'New Alarm'}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Save alarm" onPress={save} style={[styles.roundButton, styles.saveButton]}>
           <Ionicons name="checkmark" size={20} color={colors.paper} />
         </Pressable>
@@ -71,7 +89,7 @@ export default function AlarmForm() {
           </View>
           <View style={styles.periodToggle}>
             {(['AM', 'PM'] as const).map((option) => (
-              <Pressable key={option} onPress={() => setPeriod(option)} style={[styles.periodPill, period === option && styles.periodPillActive]}>
+              <Pressable key={option} onPress={() => setPeriod(option)} style={({ pressed }) => [styles.periodPill, period === option && styles.periodPillActive, pressed && styles.pressed]}>
                 <Text style={[styles.periodText, period === option && styles.periodTextActive]}>{option}</Text>
               </Pressable>
             ))}
@@ -82,7 +100,7 @@ export default function AlarmForm() {
           <Text style={type.caption}>REPEAT</Text>
           <View style={styles.days}>
             {DAY_LETTERS.map((letter, index) => (
-              <Pressable key={`${letter}-${index}`} onPress={() => toggleDay(index)} style={[styles.day, days[index] && styles.dayActive]}>
+              <Pressable key={`${letter}-${index}`} onPress={() => toggleDay(index)} style={({ pressed }) => [styles.day, days[index] && styles.dayActive, pressed && styles.pressed]}>
                 <Text style={[styles.dayText, days[index] && styles.dayTextActive]}>{letter}</Text>
               </Pressable>
             ))}
@@ -161,6 +179,7 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: colors.ink, borderColor: colors.ink },
   content: { gap: spacing.xl, paddingBottom: spacing.xxl },
   timePicker: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingTop: spacing.md },
+  pressed: { opacity: 0.72 },
   wheels: { flexDirection: 'row', alignItems: 'center' },
   colon: { fontSize: 32, fontWeight: '700', color: colors.ink, marginHorizontal: 4 },
   periodToggle: { gap: 6 },

@@ -19,9 +19,10 @@ export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProp
   const listRef = useRef<FlatList<string>>(null);
   const padded = ['', ...values, ''];
   const selectedIndex = Math.max(0, values.indexOf(value));
+  const initialOffset = (selectedIndex + 1) * ITEM_HEIGHT;
 
   const commit = (offsetY: number) => {
-    const rawIndex = Math.round(offsetY / ITEM_HEIGHT);
+    const rawIndex = Math.round(offsetY / ITEM_HEIGHT) - 1;
     const clamped = Math.min(Math.max(rawIndex, 0), values.length - 1);
     if (values[clamped] !== value) onChange(values[clamped]);
     listRef.current?.scrollToOffset({ offset: clamped * ITEM_HEIGHT, animated: true });
@@ -37,7 +38,8 @@ export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProp
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
-        contentOffset={{ x: 0, y: selectedIndex * ITEM_HEIGHT }}
+        contentOffset={{ x: 0, y: initialOffset }}
+        contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}
         getItemLayout={(_, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
         onMomentumScrollEnd={(event) => commit(event.nativeEvent.contentOffset.y)}
         renderItem={({ item }) => {

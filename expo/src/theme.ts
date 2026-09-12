@@ -25,13 +25,20 @@ export const colors = {
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
 export const radius = { sm: 10, md: 16, lg: 24, full: 999 } as const;
 
+export const fonts = {
+  regular: 'PlusJakartaSans_400Regular',
+  medium: 'PlusJakartaSans_500Medium',
+  semibold: 'PlusJakartaSans_600SemiBold',
+  bold: 'PlusJakartaSans_700Bold',
+};
+
 export const type = {
-  largeTitle: { fontSize: 34, fontWeight: '800' as const, color: colors.ink },
-  title: { fontSize: 24, fontWeight: '800' as const, color: colors.ink },
-  headline: { fontSize: 17, fontWeight: '700' as const, color: colors.ink },
-  body: { fontSize: 16, fontWeight: '400' as const, color: colors.ink },
-  subhead: { fontSize: 14, fontWeight: '500' as const, color: colors.label },
-  caption: { fontSize: 12, fontWeight: '600' as const, color: colors.label },
+  largeTitle: { fontSize: 34, fontWeight: '700' as const, fontFamily: fonts.bold, color: colors.ink },
+  title: { fontSize: 24, fontWeight: '700' as const, fontFamily: fonts.bold, color: colors.ink },
+  headline: { fontSize: 17, fontWeight: '600' as const, fontFamily: fonts.semibold, color: colors.ink },
+  body: { fontSize: 16, fontWeight: '400' as const, fontFamily: fonts.regular, color: colors.ink },
+  subhead: { fontSize: 14, fontWeight: '400' as const, fontFamily: fonts.regular, color: colors.label },
+  caption: { fontSize: 12, fontWeight: '500' as const, fontFamily: fonts.medium, color: colors.label },
 };
 
 export const shadow = {
