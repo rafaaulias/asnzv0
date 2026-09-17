@@ -11,5 +11,7 @@ __v0_jsx-dev-runtime.ts
 
 # Common ignores
 node_modules
+.expo/
+**/.expo/
 .next/
 .DS_Store
