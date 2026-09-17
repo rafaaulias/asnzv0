@@ -29,6 +29,7 @@ export default function AlarmForm() {
   const [label, setLabel] = useState('');
   const [challengeType, setChallengeType] = useState<ChallengeType>('math');
   const [mathDifficulty, setMathDifficulty] = useState<Alarm['mathDifficulty']>('easy');
+  const [shakeCountTarget, setShakeCountTarget] = useState(30);
   const [volume, setVolume] = useState(80);
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function AlarmForm() {
       setLabel(alarm.label);
       setChallengeType(alarm.challengeType);
       setMathDifficulty(alarm.mathDifficulty);
+      setShakeCountTarget(alarm.shakeCountTarget ?? 30);
       setVolume(alarm.volume ?? 80);
       setDays(DAY_LETTERS.map((day) => alarm.days.includes(day)));
     });
@@ -79,7 +81,7 @@ export default function AlarmForm() {
       days: selectedDays,
       mathDifficulty,
       mathProblemCount: 2,
-      shakeCountTarget: 30,
+      shakeCountTarget,
       volume,
     };
     const current = await loadAlarms();
@@ -178,6 +180,18 @@ export default function AlarmForm() {
               <Text style={styles.difficultyLabel}>Math Complexity</Text>
               <View style={styles.segmentedControl}>
                 {(['easy', 'medium', 'hard'] as const).map((level) => <Pressable key={level} onPress={() => setMathDifficulty(level)} style={[styles.segment, mathDifficulty === level && styles.segmentActive]}><Text style={[styles.segmentText, mathDifficulty === level && styles.segmentTextActive]}>{level[0].toUpperCase() + level.slice(1)}</Text></Pressable>)}
+              </View>
+            </View>
+          ) : null}
+          {challengeType === 'shake' ? (
+            <View style={styles.difficultyCard}>
+              <View style={styles.difficultyHeader}>
+                <View style={styles.rowValue}><Ionicons name="flash-outline" size={16} color={colors.ink} /><Text style={styles.difficultyTitle}>Difficulty & Intensity</Text></View>
+                <Text style={styles.difficultyMode}>{shakeCountTarget} Shakes</Text>
+              </View>
+              <Text style={styles.difficultyLabel}>Required Shakes</Text>
+              <View style={styles.segmentedControl}>
+                {[15, 30, 50, 75].map((target) => <Pressable key={target} onPress={() => setShakeCountTarget(target)} style={[styles.segment, shakeCountTarget === target && styles.segmentActive]}><Text style={[styles.segmentText, shakeCountTarget === target && styles.segmentTextActive]}>{target} shakes</Text></Pressable>)}
               </View>
             </View>
           ) : null}

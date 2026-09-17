@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { fonts } from '@/theme';
 import { colors } from '@/theme';
@@ -22,10 +22,13 @@ export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProp
   const selectedIndex = Math.max(0, values.indexOf(value));
   const initialOffset = (selectedIndex + 1) * ITEM_HEIGHT;
 
+  useEffect(() => {
+    listRef.current?.scrollTo({ y: initialOffset, animated: false });
+  }, [initialOffset]);
+
   const commit = (offsetY: number) => {
     const clamped = Math.min(Math.max(Math.round(offsetY / ITEM_HEIGHT) - 1, 0), values.length - 1);
     if (values[clamped] !== value) onChange(values[clamped]);
-    listRef.current?.scrollTo({ y: clamped * ITEM_HEIGHT, animated: true });
   };
 
   return (
@@ -41,7 +44,6 @@ export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProp
         contentOffset={{ x: 0, y: initialOffset }}
         contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}
         onMomentumScrollEnd={(event) => commit(event.nativeEvent.contentOffset.y)}
-        onScrollEndDrag={(event) => commit(event.nativeEvent.contentOffset.y)}
         scrollEventThrottle={16}
       >
         {padded.map((item, index) => {
