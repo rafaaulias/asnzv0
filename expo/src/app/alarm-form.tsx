@@ -28,6 +28,7 @@ export default function AlarmForm() {
   const [days, setDays] = useState<boolean[]>(DEFAULT_DAYS);
   const [label, setLabel] = useState('');
   const [challengeType, setChallengeType] = useState<ChallengeType>('math');
+  const [mathDifficulty, setMathDifficulty] = useState<Alarm['mathDifficulty']>('easy');
   const [volume, setVolume] = useState(80);
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function AlarmForm() {
       setPeriod(hour24 >= 12 ? 'PM' : 'AM');
       setLabel(alarm.label);
       setChallengeType(alarm.challengeType);
+      setMathDifficulty(alarm.mathDifficulty);
       setVolume(alarm.volume ?? 80);
       setDays(DAY_LETTERS.map((day) => alarm.days.includes(day)));
     });
@@ -75,7 +77,7 @@ export default function AlarmForm() {
       enabled: true,
       challengeType,
       days: selectedDays,
-      mathDifficulty: 'easy',
+      mathDifficulty,
       mathProblemCount: 2,
       shakeCountTarget: 30,
       volume,
@@ -167,6 +169,18 @@ export default function AlarmForm() {
               </Pressable>
             );
           })}
+          {challengeType === 'math' ? (
+            <View style={styles.difficultyCard}>
+              <View style={styles.difficultyHeader}>
+                <View style={styles.rowValue}><Ionicons name="flash-outline" size={16} color={colors.ink} /><Text style={styles.difficultyTitle}>Difficulty & Intensity</Text></View>
+                <Text style={styles.difficultyMode}>{mathDifficulty === 'easy' ? 'Easy Mode' : mathDifficulty === 'medium' ? 'Medium Mode' : 'Hard Mode'}</Text>
+              </View>
+              <Text style={styles.difficultyLabel}>Math Complexity</Text>
+              <View style={styles.segmentedControl}>
+                {(['easy', 'medium', 'hard'] as const).map((level) => <Pressable key={level} onPress={() => setMathDifficulty(level)} style={[styles.segment, mathDifficulty === level && styles.segmentActive]}><Text style={[styles.segmentText, mathDifficulty === level && styles.segmentTextActive]}>{level[0].toUpperCase() + level.slice(1)}</Text></Pressable>)}
+              </View>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.settingsCard}>
@@ -249,6 +263,16 @@ const styles = StyleSheet.create({
   challengeSubtitle: { ...type.caption, marginTop: 2 },
   challengeSubtitleActive: { color: '#D7D7D7' },
   checkCircle: { width: 26, height: 26, borderRadius: radius.full, backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center' },
+  difficultyCard: { backgroundColor: '#F8F8F8', borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
+  difficultyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  difficultyTitle: { ...type.caption, color: colors.ink, fontFamily: fonts.semibold },
+  difficultyMode: { ...type.caption, color: colors.muted },
+  difficultyLabel: { ...type.caption, color: colors.muted },
+  segmentedControl: { flexDirection: 'row', backgroundColor: colors.disabled, borderRadius: radius.md, padding: 3, gap: 3 },
+  segment: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: radius.sm },
+  segmentActive: { backgroundColor: colors.paper },
+  segmentText: { ...type.caption, color: colors.muted },
+  segmentTextActive: { color: colors.ink, fontFamily: fonts.semibold },
   settingsCard: { backgroundColor: '#F8F8F8', borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingTop: spacing.sm },
   volumeHeader: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   volumeBadge: { ...type.caption, color: colors.ink, backgroundColor: colors.disabled, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3 },

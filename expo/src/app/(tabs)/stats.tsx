@@ -8,6 +8,11 @@ const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export default function Stats() {
   return (
     <AppScreen>
+      <View style={styles.streakCard}>
+        <Ionicons name="flame" size={58} color={colors.muted} />
+        <Text style={styles.streakLabel}>Wake Streak</Text>
+        <Text style={styles.streakValue}>12 Days</Text>
+      </View>
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>Last 7 Days</Text>
@@ -40,6 +45,9 @@ function Challenge({ icon, title, subtitle }: { icon: keyof typeof Ionicons.glyp
 }
 
 const styles = StyleSheet.create({
+  streakCard: { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingVertical: spacing.lg, alignItems: 'center', gap: spacing.xs },
+  streakLabel: { ...type.title, color: colors.muted },
+  streakValue: { fontSize: 42, fontWeight: '700', fontFamily: fonts.semibold, color: colors.ink },
   card: { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: spacing.md },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardTitle: { ...type.headline, fontFamily: fonts.semibold },

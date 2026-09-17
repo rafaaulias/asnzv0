@@ -41,7 +41,7 @@ function AlarmCard({ alarm, onToggle, onPress, onTest }: { alarm: Alarm; onToggl
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>
           <View style={styles.timeRow}>
-            <Text style={styles.time}>{hour}:{minute}</Text>
+            <Text style={[styles.time, !alarm.enabled && styles.inactiveTime]}>{hour}:{minute}</Text>
             <Text style={styles.period}>{period}</Text>
           </View>
           <Text style={styles.label}>
@@ -142,6 +142,7 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   timeRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   time: { fontSize: 44, fontWeight: '600', fontFamily: fonts.semibold, color: colors.ink, letterSpacing: -2 },
+  inactiveTime: { color: colors.muted },
   period: { ...type.caption },
   label: { ...type.subhead, marginTop: 2 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },

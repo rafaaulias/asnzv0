@@ -82,7 +82,7 @@ export const BOTTOM_NAV_HEIGHT = nav.bottomPillHeight + 24;
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', zIndex: 10 },
-  row: { paddingHorizontal: 8, paddingVertical: 5 },
+  row: { paddingHorizontal: 8, paddingVertical: 13 },
   indicator: { position: 'absolute', top: 6, bottom: 6, left: 0, borderRadius: radius.full, backgroundColor: colors.ink },
   tab: { flex: 1, height: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   label: { fontSize: 12, fontWeight: '500', fontFamily: fonts.medium },
