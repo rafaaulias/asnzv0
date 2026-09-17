@@ -14,7 +14,7 @@ type GlassPillProps = PropsWithChildren<{
 // bottom tab bar so their chrome stays visually consistent.
 export function GlassPill({ children, height, shadow, style }: GlassPillProps) {
   return (
-    <View style={[{ height, borderRadius: radius.full }, shadow, style]}>
+    <View style={[styles.shell, { height, borderRadius: radius.full }, shadow, style]}>
       <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, styles.tint]} />
       <View style={styles.content}>{children}</View>
@@ -23,6 +23,7 @@ export function GlassPill({ children, height, shadow, style }: GlassPillProps) {
 }
 
 const styles = StyleSheet.create({
+  shell: { backgroundColor: 'rgba(255,255,255,0.72)' },
   tint: {
     borderRadius: radius.full,
     backgroundColor: nav.glassTint,

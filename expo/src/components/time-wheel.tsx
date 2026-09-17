@@ -1,5 +1,6 @@
 import { useRef } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { fonts } from '@/theme';
 import { colors } from '@/theme';
 
 const ITEM_HEIGHT = 74;
@@ -16,41 +17,40 @@ type TimeWheelProps = {
 // below, matching the Figma time picker. A leading/trailing blank row lets
 // the middle visible slot land exactly on the selected value.
 export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProps) {
-  const listRef = useRef<FlatList<string>>(null);
+  const listRef = useRef<ScrollView>(null);
   const padded = ['', ...values, ''];
   const selectedIndex = Math.max(0, values.indexOf(value));
-  const initialOffset = (selectedIndex + 1) * ITEM_HEIGHT;
+  const initialOffset = selectedIndex * ITEM_HEIGHT + ITEM_HEIGHT / 2;
 
   const commit = (offsetY: number) => {
-    const rawIndex = Math.round(offsetY / ITEM_HEIGHT) - 1;
-    const clamped = Math.min(Math.max(rawIndex, 0), values.length - 1);
+    const clamped = Math.min(Math.max(Math.round((offsetY - ITEM_HEIGHT / 2) / ITEM_HEIGHT), 0), values.length - 1);
     if (values[clamped] !== value) onChange(values[clamped]);
-    listRef.current?.scrollToOffset({ offset: clamped * ITEM_HEIGHT, animated: true });
+    listRef.current?.scrollTo({ y: clamped * ITEM_HEIGHT, animated: true });
   };
 
   return (
     <View style={[styles.wheel, { width }]}>
       <View pointerEvents="none" style={styles.centerFrame} />
-      <FlatList
+      <ScrollView
         ref={listRef}
-        data={padded}
-        keyExtractor={(item, index) => `${item}-${index}`}
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
         contentOffset={{ x: 0, y: initialOffset }}
         contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}
-        getItemLayout={(_, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
         onMomentumScrollEnd={(event) => commit(event.nativeEvent.contentOffset.y)}
-        renderItem={({ item }) => {
+        onScrollEndDrag={(event) => commit(event.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={16}
+      >
+        {padded.map((item, index) => {
           const isSelected = item !== '' && item === value;
           return (
-            <View style={styles.item}>
+            <View key={`${item}-${index}`} style={styles.item}>
               <Text style={[styles.itemText, isSelected && styles.itemTextActive]}>{item}</Text>
             </View>
           );
-        }}
-      />
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -69,6 +69,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   item: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  itemText: { fontSize: 40, fontWeight: '500', color: colors.muted, opacity: 0.3 },
-  itemTextActive: { color: colors.ink, fontWeight: '700', opacity: 1 },
+  itemText: { fontSize: 40, fontWeight: '400', fontFamily: fonts.regular, color: colors.muted, opacity: 0.3 },
+  itemTextActive: { color: colors.ink, fontWeight: '600', fontFamily: fonts.semibold, opacity: 1 },
 });

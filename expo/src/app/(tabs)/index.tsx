@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { AppScreen } from '@/components/app-screen';
-import { colors, radius, shadow, spacing, type } from '@/theme';
+import { colors, fonts, radius, shadow, spacing, type } from '@/theme';
 import { Alarm, loadAlarms, saveAlarms } from '@/services/storage';
 
 function formatTime(time24: string) {
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   cardInactive: { backgroundColor: '#F4F4F4', borderColor: '#E8E8E8', shadowOpacity: 0.02 },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   timeRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  time: { fontSize: 44, fontWeight: '800', color: colors.ink, letterSpacing: -2 },
+  time: { fontSize: 44, fontWeight: '600', fontFamily: fonts.semibold, color: colors.ink, letterSpacing: -2 },
   period: { ...type.caption },
   label: { ...type.subhead, marginTop: 2 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },

@@ -63,9 +63,9 @@ export const nav = {
   // Bottom nav: more visible than the top bar, per design.
   bottomShadow: {
     shadowColor: '#000',
-    shadowOpacity: 0.16,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10,
+    shadowOpacity: 0.11,
+    shadowRadius: 13,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 5,
   },
 };

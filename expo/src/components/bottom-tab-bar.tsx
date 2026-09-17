@@ -6,7 +6,7 @@ import type { BottomTabBarProps } from 'expo-router/build/react-navigation/botto
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassPill } from '@/components/glass-pill';
 import { usePageMargin } from '@/hooks/use-page-margin';
-import { colors, nav, radius } from '@/theme';
+import { colors, fonts, nav, radius } from '@/theme';
 
 const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
   index: { active: 'alarm', inactive: 'alarm-outline' },
@@ -82,8 +82,8 @@ export const BOTTOM_NAV_HEIGHT = nav.bottomPillHeight + 24;
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', zIndex: 10 },
-  row: { paddingHorizontal: 6 },
+  row: { paddingHorizontal: 8, paddingVertical: 5 },
   indicator: { position: 'absolute', top: 6, bottom: 6, left: 0, borderRadius: radius.full, backgroundColor: colors.ink },
   tab: { flex: 1, height: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  label: { fontSize: 12, fontWeight: '500' },
+  label: { fontSize: 12, fontWeight: '500', fontFamily: fonts.medium },
 });
