@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { AppScreen } from '@/components/app-screen';
 import { colors, fonts, radius, shadow, spacing, type } from '@/theme';
@@ -71,9 +72,17 @@ export default function AlarmsScreen() {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const router = useRouter();
 
-  useEffect(() => {
-    loadAlarms().then(setAlarms);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+      loadAlarms().then((items) => {
+        if (mounted) setAlarms(items);
+      });
+      return () => {
+        mounted = false;
+      };
+    }, []),
+  );
 
   const toggle = (id: string, enabled: boolean) => {
     const next = alarms.map((alarm) => (alarm.id === id ? { ...alarm, enabled } : alarm));
