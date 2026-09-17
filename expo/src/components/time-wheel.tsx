@@ -20,10 +20,10 @@ export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProp
   const listRef = useRef<ScrollView>(null);
   const padded = ['', ...values, ''];
   const selectedIndex = Math.max(0, values.indexOf(value));
-  const initialOffset = selectedIndex * ITEM_HEIGHT + ITEM_HEIGHT / 2;
+  const initialOffset = (selectedIndex + 1) * ITEM_HEIGHT;
 
   const commit = (offsetY: number) => {
-    const clamped = Math.min(Math.max(Math.round((offsetY - ITEM_HEIGHT / 2) / ITEM_HEIGHT), 0), values.length - 1);
+    const clamped = Math.min(Math.max(Math.round(offsetY / ITEM_HEIGHT) - 1, 0), values.length - 1);
     if (values[clamped] !== value) onChange(values[clamped]);
     listRef.current?.scrollTo({ y: clamped * ITEM_HEIGHT, animated: true });
   };
@@ -34,6 +34,8 @@ export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProp
       <ScrollView
         ref={listRef}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+        scrollEnabled
         snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
         contentOffset={{ x: 0, y: initialOffset }}

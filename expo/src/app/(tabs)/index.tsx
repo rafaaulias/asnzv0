@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { AppScreen } from '@/components/app-screen';
 import { colors, fonts, radius, shadow, spacing, type } from '@/theme';
@@ -40,7 +41,7 @@ function AlarmCard({ alarm, onToggle, onPress, onTest }: { alarm: Alarm; onToggl
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>
           <View style={styles.timeRow}>
-            <Text style={styles.time}>{hour}:{minute}</Text>
+            <Text style={[styles.time, !alarm.enabled && styles.inactiveTime]}>{hour}:{minute}</Text>
             <Text style={styles.period}>{period}</Text>
           </View>
           <Text style={styles.label}>
@@ -71,9 +72,17 @@ export default function AlarmsScreen() {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const router = useRouter();
 
-  useEffect(() => {
-    loadAlarms().then(setAlarms);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+      loadAlarms().then((items) => {
+        if (mounted) setAlarms(items);
+      });
+      return () => {
+        mounted = false;
+      };
+    }, []),
+  );
 
   const toggle = (id: string, enabled: boolean) => {
     const next = alarms.map((alarm) => (alarm.id === id ? { ...alarm, enabled } : alarm));
@@ -133,6 +142,7 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   timeRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   time: { fontSize: 44, fontWeight: '600', fontFamily: fonts.semibold, color: colors.ink, letterSpacing: -2 },
+  inactiveTime: { color: colors.muted },
   period: { ...type.caption },
   label: { ...type.subhead, marginTop: 2 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },

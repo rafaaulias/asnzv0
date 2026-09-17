@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TimeWheel } from '@/components/time-wheel';
@@ -28,6 +28,8 @@ export default function AlarmForm() {
   const [days, setDays] = useState<boolean[]>(DEFAULT_DAYS);
   const [label, setLabel] = useState('');
   const [challengeType, setChallengeType] = useState<ChallengeType>('math');
+  const [mathDifficulty, setMathDifficulty] = useState<Alarm['mathDifficulty']>('easy');
+  const [volume, setVolume] = useState(80);
 
   useEffect(() => {
     if (!alarmId) return;
@@ -40,11 +42,29 @@ export default function AlarmForm() {
       setPeriod(hour24 >= 12 ? 'PM' : 'AM');
       setLabel(alarm.label);
       setChallengeType(alarm.challengeType);
+      setMathDifficulty(alarm.mathDifficulty);
+      setVolume(alarm.volume ?? 80);
       setDays(DAY_LETTERS.map((day) => alarm.days.includes(day)));
     });
   }, [alarmId]);
 
   const toggleDay = (index: number) => setDays((prev) => prev.map((value, i) => (i === index ? !value : value)));
+
+  const remove = () => {
+    if (!alarmId) return;
+    Alert.alert('Delete Alarm', 'This alarm will be removed permanently.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          const current = await loadAlarms();
+          await saveAlarms(current.filter((alarm) => alarm.id !== alarmId));
+          router.back();
+        },
+      },
+    ]);
+  };
 
   const save = async () => {
     const hourNumber = Number(hour) % 12;
@@ -57,10 +77,10 @@ export default function AlarmForm() {
       enabled: true,
       challengeType,
       days: selectedDays,
-      mathDifficulty: 'easy',
+      mathDifficulty,
       mathProblemCount: 2,
       shakeCountTarget: 30,
-      volume: 80,
+      volume,
     };
     const current = await loadAlarms();
     const next = isEditing ? current.map((alarm) => (alarm.id === newAlarm.id ? { ...alarm, ...newAlarm } : alarm)) : [...current, newAlarm];
@@ -149,12 +169,50 @@ export default function AlarmForm() {
               </Pressable>
             );
           })}
+          {challengeType === 'math' ? (
+            <View style={styles.difficultyCard}>
+              <View style={styles.difficultyHeader}>
+                <View style={styles.rowValue}><Ionicons name="flash-outline" size={16} color={colors.ink} /><Text style={styles.difficultyTitle}>Difficulty & Intensity</Text></View>
+                <Text style={styles.difficultyMode}>{mathDifficulty === 'easy' ? 'Easy Mode' : mathDifficulty === 'medium' ? 'Medium Mode' : 'Hard Mode'}</Text>
+              </View>
+              <Text style={styles.difficultyLabel}>Math Complexity</Text>
+              <View style={styles.segmentedControl}>
+                {(['easy', 'medium', 'hard'] as const).map((level) => <Pressable key={level} onPress={() => setMathDifficulty(level)} style={[styles.segment, mathDifficulty === level && styles.segmentActive]}><Text style={[styles.segmentText, mathDifficulty === level && styles.segmentTextActive]}>{level[0].toUpperCase() + level.slice(1)}</Text></Pressable>)}
+              </View>
+            </View>
+          ) : null}
         </View>
 
-        <View style={styles.section}>
-          <Row label="Sound" value="Radar" />
-          <Row label="Vibrate" value="Default" />
+        <View style={styles.settingsCard}>
+          <View style={styles.volumeHeader}>
+            <View style={styles.rowValue}>
+              <Ionicons name="volume-medium-outline" size={17} color={colors.ink} />
+              <Text style={type.body}>Alarm Volume</Text>
+            </View>
+            <Text style={styles.volumeBadge}>{volume}%</Text>
+          </View>
+          <View style={styles.volumeControls}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Decrease alarm volume" onPress={() => setVolume((current) => Math.max(5, current - 5))} style={styles.volumeAdjust}>
+              <Ionicons name="remove" size={16} color={colors.ink} />
+            </Pressable>
+            <View style={styles.volumeTrack}>
+              <View style={[styles.volumeFill, { width: `${volume}%` }]} />
+              <View style={[styles.volumeThumb, { left: `${volume}%` }]} />
+            </View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Increase alarm volume" onPress={() => setVolume((current) => Math.min(100, current + 5))} style={styles.volumeAdjust}>
+              <Ionicons name="add" size={16} color={colors.ink} />
+            </Pressable>
+          </View>
+          <Row label="Sound" value="Radar Chime" />
+          <Row label="Vibration" value="On" />
         </View>
+
+        {isEditing ? (
+          <Pressable onPress={remove} style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}>
+            <Ionicons name="trash-outline" size={16} color="#D92D20" />
+            <Text style={styles.deleteText}>Delete Alarm</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -205,6 +263,26 @@ const styles = StyleSheet.create({
   challengeSubtitle: { ...type.caption, marginTop: 2 },
   challengeSubtitleActive: { color: '#D7D7D7' },
   checkCircle: { width: 26, height: 26, borderRadius: radius.full, backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center' },
-  row: { minHeight: 56, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  difficultyCard: { backgroundColor: '#F8F8F8', borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
+  difficultyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  difficultyTitle: { ...type.caption, color: colors.ink, fontFamily: fonts.semibold },
+  difficultyMode: { ...type.caption, color: colors.muted },
+  difficultyLabel: { ...type.caption, color: colors.muted },
+  segmentedControl: { flexDirection: 'row', backgroundColor: colors.disabled, borderRadius: radius.md, padding: 3, gap: 3 },
+  segment: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: radius.sm },
+  segmentActive: { backgroundColor: colors.paper },
+  segmentText: { ...type.caption, color: colors.muted },
+  segmentTextActive: { color: colors.ink, fontFamily: fonts.semibold },
+  settingsCard: { backgroundColor: '#F8F8F8', borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+  volumeHeader: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  volumeBadge: { ...type.caption, color: colors.ink, backgroundColor: colors.disabled, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3 },
+  volumeControls: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
+  volumeAdjust: { width: 28, height: 28, borderRadius: radius.full, backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center' },
+  volumeTrack: { flex: 1, height: 5, borderRadius: radius.full, backgroundColor: '#D9D9D9', overflow: 'visible' },
+  volumeFill: { height: 5, borderRadius: radius.full, backgroundColor: colors.ink },
+  volumeThumb: { position: 'absolute', top: -5, width: 15, height: 15, marginLeft: -7, borderRadius: radius.full, backgroundColor: colors.ink },
+  row: { minHeight: 52, borderTopWidth: 1, borderTopColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowValue: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  deleteButton: { minHeight: 48, borderRadius: radius.md, borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FFF1F1', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  deleteText: { fontFamily: fonts.medium, fontSize: 13, color: '#D92D20' },
 });
