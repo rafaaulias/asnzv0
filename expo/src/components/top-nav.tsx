@@ -43,7 +43,7 @@ export const TOP_NAV_HEIGHT = nav.pillHeight + 16;
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', zIndex: 10 },
-  row: { paddingLeft: 18, paddingRight: 14 },
-  logo: { width: 28, height: 28 },
+  row: { paddingHorizontal: 18 },
+  logo: { width: 36, height: 36 },
   addButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 });

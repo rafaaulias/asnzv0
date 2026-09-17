@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TimeWheel } from '@/components/time-wheel';
 import { usePageMargin } from '@/hooks/use-page-margin';
 import { Alarm, ChallengeType, loadAlarms, saveAlarms } from '@/services/storage';
-import { colors, radius, spacing, type } from '@/theme';
+import { colors, fonts, radius, spacing, type } from '@/theme';
 
 const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
@@ -70,7 +70,7 @@ export default function AlarmForm() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={[styles.header, { paddingHorizontal: margin }]}>
+      <View style={[styles.header, { paddingHorizontal: margin, paddingTop: 8 }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} style={styles.roundButton}>
           <Ionicons name="close" size={20} color={colors.ink} />
         </Pressable>
@@ -181,17 +181,17 @@ const styles = StyleSheet.create({
   timePicker: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingTop: spacing.md },
   pressed: { opacity: 0.72 },
   wheels: { flexDirection: 'row', alignItems: 'center' },
-  colon: { fontSize: 32, fontWeight: '700', color: colors.ink, marginHorizontal: 4 },
+  colon: { fontSize: 32, fontWeight: '500', fontFamily: fonts.medium, color: colors.ink, marginHorizontal: 4 },
   periodToggle: { gap: 6 },
   periodPill: { width: 52, height: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   periodPillActive: { backgroundColor: colors.ink, borderColor: colors.ink },
-  periodText: { fontSize: 13, fontWeight: '700', color: colors.label },
+  periodText: { fontSize: 13, fontWeight: '500', fontFamily: fonts.medium, color: colors.label },
   periodTextActive: { color: colors.paper },
   section: { gap: spacing.sm },
   days: { flexDirection: 'row', justifyContent: 'space-between' },
   day: { width: 40, height: 40, borderRadius: radius.full, backgroundColor: colors.dayInactiveBg, alignItems: 'center', justifyContent: 'center' },
   dayActive: { backgroundColor: colors.ink },
-  dayText: { fontSize: 13, fontWeight: '800', color: colors.dayInactiveText },
+  dayText: { fontSize: 13, fontWeight: '500', fontFamily: fonts.medium, color: colors.dayInactiveText },
   dayTextActive: { color: colors.paper },
   labelField: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, height: 52 },
   labelInput: { flex: 1, ...type.body },
