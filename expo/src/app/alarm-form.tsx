@@ -224,7 +224,7 @@ export default function AlarmForm() {
               maximumValue={100}
               step={1}
               value={volume}
-              onValueChange={setVolume}
+              onValueChange={(nextValue) => setVolume(Math.round(nextValue))}
               minimumTrackTintColor={colors.ink}
               maximumTrackTintColor="#D9D9D9"
               thumbTintColor={colors.ink}
