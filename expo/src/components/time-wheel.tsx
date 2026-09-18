@@ -24,21 +24,22 @@ export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProp
   const selectedIndex = Math.max(0, values.indexOf(value));
   const middleCycle = Math.floor(cycleCount / 2);
   const initialIndex = middleCycle * values.length + selectedIndex;
-  const initialOffset = initialIndex * ITEM_HEIGHT;
+  const initialRenderIndex = initialIndex + 1;
+  const initialOffset = initialRenderIndex * ITEM_HEIGHT;
 
   useEffect(() => {
     listRef.current?.scrollTo({ y: initialOffset, animated: false });
   }, [initialOffset]);
 
   const commit = (offsetY: number) => {
-    const rawIndex = Math.round(offsetY / ITEM_HEIGHT);
-    const valueIndex = ((rawIndex % values.length) + values.length) % values.length;
-    const middleIndex = middleCycle * values.length + valueIndex;
+    const rawRenderIndex = Math.round(offsetY / ITEM_HEIGHT);
+    const valueIndex = (((rawRenderIndex - 1) % values.length) + values.length) % values.length;
+    const middleIndex = middleCycle * values.length + valueIndex + 1;
     if (values[valueIndex] !== value) {
       Haptics.selection();
       onChange(values[valueIndex]);
     }
-    if (Math.abs(rawIndex - middleIndex) > values.length) {
+    if (Math.abs(rawRenderIndex - middleIndex) > values.length) {
       requestAnimationFrame(() => listRef.current?.scrollTo({ y: middleIndex * ITEM_HEIGHT, animated: false }));
     }
   };

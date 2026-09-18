@@ -78,7 +78,8 @@ export default function AlarmsScreen() {
     useCallback(() => {
       let mounted = true;
       loadAlarms().then((items) => {
-        if (mounted) setAlarms(items);
+        const sorted = [...items].sort((a, b) => minutesUntil(a.time) - minutesUntil(b.time));
+        if (mounted) setAlarms(sorted);
       });
       return () => {
         mounted = false;
