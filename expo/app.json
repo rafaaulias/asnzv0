@@ -4,13 +4,18 @@
     "slug": "anti-snooze",
     "scheme": "anti-snooze",
     "version": "1.0.0",
+    "updates": {
+      "checkAutomatically": "ON_ERROR_RECOVERY",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "plugins": [
       "expo-router",
       "expo-notifications",
       "expo-audio",
-      "expo-font"
+      "expo-font",
+      "expo-asset"
     ],
     "android": {
       "package": "com.antisnooze.alarm",
