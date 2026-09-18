@@ -11,7 +11,16 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "plugins": [
-      ["expo-notifications", {"sounds": ["./assets/sounds/radar.mp3", "./assets/sounds/bell.mp3", "./assets/sounds/beep.mp3"]}],
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/radar.mp3",
+            "./assets/sounds/bell.mp3",
+            "./assets/sounds/beep.mp3"
+          ]
+        }
+      ],
       "expo-router",
       "expo-audio",
       "expo-font",
@@ -27,7 +36,11 @@
         "VIBRATE",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
-        "SYSTEM_ALERT_WINDOW"
+        "SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "ios": {
@@ -42,6 +55,12 @@
     },
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6cfdd03f-96d0-46aa-8abc-767cb46bb1be"
+      }
     }
   }
 }
