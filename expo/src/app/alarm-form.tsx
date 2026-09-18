@@ -212,7 +212,7 @@ export default function AlarmForm() {
               <Ionicons name="volume-medium-outline" size={17} color={colors.ink} />
               <Text style={type.body}>Alarm Volume</Text>
             </View>
-            <Text style={styles.volumeBadge}>{volume}%</Text>
+            <Text style={styles.volumeBadge}>{Math.round(volume)}%</Text>
           </View>
           <View style={styles.volumeControls}>
             <Pressable accessibilityRole="button" accessibilityLabel="Decrease alarm volume" onPress={() => setVolume((current) => Math.max(5, current - 5))} style={styles.volumeAdjust}>
