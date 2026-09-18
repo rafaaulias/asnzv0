@@ -3,15 +3,17 @@ import type * as Notifications from 'expo-notifications';
 
 type NotificationModule = typeof Notifications;
 
-const isExpoGo = Constants.executionEnvironment === Constants.ExecutionEnvironment.StoreClient;
+const isExpoGo = Constants.appOwnership === 'expo' || Constants.executionEnvironment === Constants.ExecutionEnvironment.StoreClient;
 let notificationsPromise: Promise<NotificationModule | null> | null = null;
 
 async function getNotifications() {
   if (isExpoGo) return null;
-  notificationsPromise ??= import('expo-notifications').then((module) => {
-    module.setNotificationHandler({ handleNotification: async () => ({ shouldPlaySound: true, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }) });
-    return module;
-  });
+  notificationsPromise ??= import('expo-notifications')
+    .then((module) => {
+      module.setNotificationHandler({ handleNotification: async () => ({ shouldPlaySound: true, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }) });
+      return module;
+    })
+    .catch(() => null);
   return notificationsPromise;
 }
 
