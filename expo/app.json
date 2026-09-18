@@ -11,8 +11,8 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "plugins": [
+      ["expo-notifications", {"sounds": ["./assets/sounds/radar.mp3", "./assets/sounds/bell.mp3", "./assets/sounds/beep.mp3"]}],
       "expo-router",
-      "expo-notifications",
       "expo-audio",
       "expo-font",
       "expo-asset"

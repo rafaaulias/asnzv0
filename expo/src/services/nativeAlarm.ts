@@ -33,7 +33,7 @@ export async function scheduleNativeAlarm(alarmId: string, hour: number, minute:
   const notifications = await getNotifications();
   if (!notifications) return null;
   await notifications.cancelScheduledNotificationAsync(alarmId).catch(() => undefined);
-  return notifications.scheduleNotificationAsync({ identifier: alarmId, content: { title: 'Anti-Snooze alarm', body: 'Complete your challenge to unlock.', sound: 'default', vibrate: vibration ? [0, 250, 150, 250] : undefined, data: { alarmId, fullScreenIntent: true, sound } }, trigger: { type: notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: weekdays[0] ?? 2, hour, minute } });
+  return notifications.scheduleNotificationAsync({ identifier: alarmId, content: { title: 'Anti-Snooze alarm', body: 'Complete your challenge to unlock.', sound: sound === 'default' ? 'radar.mp3' : sound === 'soft' ? 'bell.mp3' : 'beep.mp3', vibrate: vibration ? [0, 250, 150, 250] : undefined, data: { alarmId, fullScreenIntent: true, sound } }, trigger: { type: notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: weekdays[0] ?? 2, hour, minute } });
 }
 
 export async function cancelNativeAlarm(id: string) {

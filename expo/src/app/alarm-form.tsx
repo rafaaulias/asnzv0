@@ -222,9 +222,8 @@ export default function AlarmForm() {
               accessibilityLabel="Alarm volume"
               minimumValue={5}
               maximumValue={100}
-              step={1}
               value={volume}
-              onValueChange={(nextValue) => setVolume(Math.round(nextValue))}
+              onValueChange={setVolume}
               minimumTrackTintColor={colors.ink}
               maximumTrackTintColor="#D9D9D9"
               thumbTintColor={colors.ink}
