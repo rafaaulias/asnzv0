@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Slider from '@react-native-community/slider';
 import { Alert, LayoutAnimation, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -33,7 +34,7 @@ export default function AlarmForm() {
   const [volume, setVolume] = useState(80);
   const [sound, setSound] = useState<Alarm['sound']>('default');
   const [vibration, setVibration] = useState(true);
-  const [volumeTrackWidth, setVolumeTrackWidth] = useState(1);
+
 
   useEffect(() => {
     if (!alarmId) return;
@@ -56,7 +57,6 @@ export default function AlarmForm() {
   }, [alarmId]);
 
   const toggleDay = (index: number) => setDays((prev) => prev.map((value, i) => (i === index ? !value : value)));
-  const updateVolume = (locationX: number, width: number) => setVolume(Math.round(Math.min(1, Math.max(0, locationX / width)) * 100));
   const choosePeriod = (option: 'AM' | 'PM') => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setPeriod(option); };
 
   const remove = () => {
@@ -218,10 +218,18 @@ export default function AlarmForm() {
             <Pressable accessibilityRole="button" accessibilityLabel="Decrease alarm volume" onPress={() => setVolume((current) => Math.max(5, current - 5))} style={styles.volumeAdjust}>
               <Ionicons name="remove" size={16} color={colors.ink} />
             </Pressable>
-            <Pressable onPress={(event) => updateVolume(event.nativeEvent.locationX, volumeTrackWidth)} onLayout={(event) => setVolumeTrackWidth(event.nativeEvent.layout.width)} style={styles.volumeTrack}>
-              <View style={[styles.volumeFill, { width: `${volume}%` }]} />
-              <View style={[styles.volumeThumb, { left: `${volume}%` }]} />
-            </Pressable>
+            <Slider
+              accessibilityLabel="Alarm volume"
+              minimumValue={5}
+              maximumValue={100}
+              step={1}
+              value={volume}
+              onValueChange={setVolume}
+              minimumTrackTintColor={colors.ink}
+              maximumTrackTintColor="#D9D9D9"
+              thumbTintColor={colors.ink}
+              style={styles.volumeSlider}
+            />
             <Pressable accessibilityRole="button" accessibilityLabel="Increase alarm volume" onPress={() => setVolume((current) => Math.min(100, current + 5))} style={styles.volumeAdjust}>
               <Ionicons name="add" size={16} color={colors.ink} />
             </Pressable>
@@ -300,6 +308,7 @@ const styles = StyleSheet.create({
   volumeHeader: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   volumeBadge: { ...type.caption, color: colors.ink, backgroundColor: colors.disabled, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3 },
   volumeControls: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
+  volumeSlider: { flex: 1, height: 40 },
   volumeAdjust: { width: 28, height: 28, borderRadius: radius.full, backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center' },
   volumeTrack: { flex: 1, height: 5, borderRadius: radius.full, backgroundColor: '#D9D9D9', overflow: 'visible' },
   volumeFill: { height: 5, borderRadius: radius.full, backgroundColor: colors.ink },
