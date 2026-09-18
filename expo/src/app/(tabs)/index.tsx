@@ -6,6 +6,8 @@ import { useRouter } from 'expo-router';
 import { AppScreen } from '@/components/app-screen';
 import { colors, fonts, radius, shadow, spacing, type } from '@/theme';
 import { Alarm, loadAlarms, saveAlarms } from '@/services/storage';
+import { Haptics } from '@/services/feedback';
+import { cancelNativeAlarm, requestAlarmPermissions, scheduleNativeAlarm } from '@/services/nativeAlarm';
 
 function formatTime(time24: string) {
   const [hourRaw, minute] = time24.split(':');
@@ -85,9 +87,16 @@ export default function AlarmsScreen() {
   );
 
   const toggle = (id: string, enabled: boolean) => {
-    const next = alarms.map((alarm) => (alarm.id === id ? { ...alarm, enabled } : alarm));
-    setAlarms(next);
-    saveAlarms(next);
+  Haptics.light();
+  const alarm = alarms.find((item) => item.id === id);
+  const next = alarms.map((item) => (item.id === id ? { ...item, enabled } : item));
+  setAlarms(next);
+  saveAlarms(next);
+  if (alarm) {
+    const [hour, minute] = alarm.time.split(':').map(Number);
+    if (enabled) requestAlarmPermissions().then((granted) => { if (granted) void scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map((day) => ['S', 'M', 'T', 'W', 'T', 'F', 'S'].indexOf(day) + 1), alarm.sound, alarm.vibration); });
+    else cancelNativeAlarm(alarm.id).catch(() => undefined);
+  }
   };
 
   const active = alarms.filter((alarm) => alarm.enabled);

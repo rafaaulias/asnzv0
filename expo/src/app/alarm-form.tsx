@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, LayoutAnimation, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TimeWheel } from '@/components/time-wheel';
@@ -31,6 +31,9 @@ export default function AlarmForm() {
   const [mathDifficulty, setMathDifficulty] = useState<Alarm['mathDifficulty']>('easy');
   const [shakeCountTarget, setShakeCountTarget] = useState(30);
   const [volume, setVolume] = useState(80);
+  const [sound, setSound] = useState<Alarm['sound']>('default');
+  const [vibration, setVibration] = useState(true);
+  const [volumeTrackWidth, setVolumeTrackWidth] = useState(1);
 
   useEffect(() => {
     if (!alarmId) return;
@@ -46,11 +49,15 @@ export default function AlarmForm() {
       setMathDifficulty(alarm.mathDifficulty);
       setShakeCountTarget(alarm.shakeCountTarget ?? 30);
       setVolume(alarm.volume ?? 80);
+      setSound(alarm.sound ?? 'default');
+      setVibration(alarm.vibration ?? true);
       setDays(DAY_LETTERS.map((day) => alarm.days.includes(day)));
     });
   }, [alarmId]);
 
   const toggleDay = (index: number) => setDays((prev) => prev.map((value, i) => (i === index ? !value : value)));
+  const updateVolume = (locationX: number, width: number) => setVolume(Math.round(Math.min(1, Math.max(0, locationX / width)) * 100));
+  const choosePeriod = (option: 'AM' | 'PM') => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setPeriod(option); };
 
   const remove = () => {
     if (!alarmId) return;
@@ -83,6 +90,8 @@ export default function AlarmForm() {
       mathProblemCount: 2,
       shakeCountTarget,
       volume,
+      sound,
+      vibration,
     };
     const current = await loadAlarms();
     const next = isEditing ? current.map((alarm) => (alarm.id === newAlarm.id ? { ...alarm, ...newAlarm } : alarm)) : [...current, newAlarm];
@@ -111,7 +120,7 @@ export default function AlarmForm() {
           </View>
           <View style={styles.periodToggle}>
             {(['AM', 'PM'] as const).map((option) => (
-              <Pressable key={option} onPress={() => setPeriod(option)} style={({ pressed }) => [styles.periodPill, period === option && styles.periodPillActive, pressed && styles.pressed]}>
+              <Pressable key={option} onPress={() => choosePeriod(option)} style={({ pressed }) => [styles.periodPill, period === option && styles.periodPillActive, pressed && styles.pressed]}>
                 <Text style={[styles.periodText, period === option && styles.periodTextActive]}>{option}</Text>
               </Pressable>
             ))}
@@ -209,16 +218,16 @@ export default function AlarmForm() {
             <Pressable accessibilityRole="button" accessibilityLabel="Decrease alarm volume" onPress={() => setVolume((current) => Math.max(5, current - 5))} style={styles.volumeAdjust}>
               <Ionicons name="remove" size={16} color={colors.ink} />
             </Pressable>
-            <View style={styles.volumeTrack}>
+            <Pressable onPress={(event) => updateVolume(event.nativeEvent.locationX, volumeTrackWidth)} onLayout={(event) => setVolumeTrackWidth(event.nativeEvent.layout.width)} style={styles.volumeTrack}>
               <View style={[styles.volumeFill, { width: `${volume}%` }]} />
               <View style={[styles.volumeThumb, { left: `${volume}%` }]} />
-            </View>
+            </Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel="Increase alarm volume" onPress={() => setVolume((current) => Math.min(100, current + 5))} style={styles.volumeAdjust}>
               <Ionicons name="add" size={16} color={colors.ink} />
             </Pressable>
           </View>
-          <Row label="Sound" value="Radar Chime" />
-          <Row label="Vibration" value="On" />
+          <Row label="Sound" value={sound === 'default' ? 'Radar Chime' : sound === 'soft' ? 'Soft Bell' : 'Bright Pulse'} onPress={() => setSound((current) => current === 'default' ? 'soft' : current === 'soft' ? 'bright' : 'default')} />
+          <Row label="Vibration" value={vibration ? 'On' : 'Off'} onPress={() => setVibration((current) => !current)} />
         </View>
 
         {isEditing ? (
@@ -232,15 +241,15 @@ export default function AlarmForm() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
   return (
-    <View style={styles.row}>
+    <Pressable onPress={onPress} style={styles.row}>
       <Text style={type.body}>{label}</Text>
       <View style={styles.rowValue}>
         <Text style={type.subhead}>{value}</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.label} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
