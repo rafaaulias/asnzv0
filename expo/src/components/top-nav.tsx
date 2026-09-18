@@ -19,7 +19,7 @@ export function TopNav({ onAddPress }: TopNavProps) {
   const margin = usePageMargin();
 
   return (
-    <View style={[styles.wrap, { top: insets.top + 8, left: margin, right: margin }]} pointerEvents="box-none">
+    <View style={[styles.wrap, { top: insets.top + 20, left: margin, right: margin }]} pointerEvents="box-none">
       <GlassPill height={nav.pillHeight} shadow={nav.topShadow} style={styles.row}>
         <Image source={logo} style={styles.logo} contentFit="contain" />
         <View style={{ flex: 1 }} />
@@ -39,11 +39,11 @@ export function TopNav({ onAddPress }: TopNavProps) {
   );
 }
 
-export const TOP_NAV_HEIGHT = nav.pillHeight + 16;
+export const TOP_NAV_HEIGHT = nav.pillHeight + 18;
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', zIndex: 10 },
-  row: { paddingHorizontal: 18, paddingVertical: 8 },
-  logo: { width: 44, height: 44 },
+  row: { paddingHorizontal: 12, paddingVertical: 8 },
+  logo: { width: 50, height: 50 },
   addButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 });

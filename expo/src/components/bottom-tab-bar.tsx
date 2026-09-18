@@ -48,7 +48,7 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   }));
 
   return (
-    <View style={[styles.wrap, { left: margin, right: margin, bottom: insets.bottom + 12 }]} pointerEvents="box-none">
+    <View style={[styles.wrap, { left: margin, right: margin, bottom: insets.bottom + 20 }]} pointerEvents="box-none">
       <GlassPill height={nav.bottomPillHeight} shadow={nav.bottomShadow} style={styles.row}>
         <Animated.View style={[styles.indicator, indicatorStyle]} />
         {state.routes.map((route, index) => {
@@ -82,7 +82,7 @@ export const BOTTOM_NAV_HEIGHT = nav.bottomPillHeight + 24;
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', zIndex: 10 },
-  row: { paddingHorizontal: 8, paddingVertical: 8 },
+  row: { paddingHorizontal: 8, paddingVertical: 6 },
   indicator: { position: 'absolute', top: 4, bottom: 4, left: 0, borderRadius: radius.full, backgroundColor: colors.ink },
   tab: { flex: 1, height: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   label: { fontSize: 12, fontWeight: '500', fontFamily: fonts.medium },
