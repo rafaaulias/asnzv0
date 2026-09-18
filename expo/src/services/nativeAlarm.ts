@@ -3,7 +3,7 @@ import type * as Notifications from 'expo-notifications';
 
 type NotificationModule = typeof Notifications;
 
-const isExpoGo = Constants.appOwnership === 'expo' || Constants.executionEnvironment === Constants.ExecutionEnvironment.StoreClient;
+const isExpoGo = Constants.appOwnership === 'expo' || Constants.executionEnvironment === 'storeClient';
 let notificationsPromise: Promise<NotificationModule | null> | null = null;
 
 async function getNotifications() {
