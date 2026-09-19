@@ -7,7 +7,7 @@ import { AppScreen } from '@/components/app-screen';
 import { colors, fonts, radius, shadow, spacing, type } from '@/theme';
 import { Alarm, loadAlarms, saveAlarms } from '@/services/storage';
 import { Haptics } from '@/services/feedback';
-import { cancelNativeAlarm, dayToWeekday, requestAlarmPermissions, scheduleNativeAlarm } from '@/services/nativeAlarm';
+import { cancelNativeAlarm, dayToWeekday, scheduleNativeAlarm, syncAlarms } from '@/services/nativeAlarm';
 import { DAY_KEYS, useTranslation } from '@/i18n';
 
 function formatTime(time24: string) {
@@ -95,8 +95,11 @@ export default function AlarmsScreen() {
       loadAlarms().then(async (items) => {
         const sorted = [...items].sort((a, b) => minutesUntil(a.time, a.days) - minutesUntil(b.time, b.days));
         if (mounted) setAlarms(sorted);
-        const granted = await requestAlarmPermissions();
-        if (granted) await Promise.all(sorted.filter((alarm) => alarm.enabled).map((alarm) => { const [hour, minute] = alarm.time.split(':').map(Number); return scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map(dayToWeekday).filter((day) => day >= 0), alarm.sound, alarm.vibration); }));
+        // Scheduling is never gated on a permission prompt result: a false
+        // negative here silently disabled every alarm. syncAlarms reconciles
+        // the native trigger list with storage and reports what it scheduled.
+        const scheduled = await syncAlarms(sorted);
+        console.log('[v0] Reconciled native alarms on focus:', scheduled, 'trigger(s)');
       });
       return () => {
         mounted = false;
@@ -112,7 +115,7 @@ export default function AlarmsScreen() {
   saveAlarms(next);
   if (alarm) {
     const [hour, minute] = alarm.time.split(':').map(Number);
-    if (enabled) requestAlarmPermissions().then((granted) => { if (granted) void scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map(dayToWeekday).filter((day) => day >= 0), alarm.sound, alarm.vibration); });
+    if (enabled) void scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map(dayToWeekday).filter((day) => day >= 0), alarm.sound, alarm.vibration);
     else cancelNativeAlarm(alarm.id).catch(() => undefined);
   }
   };

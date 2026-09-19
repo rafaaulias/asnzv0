@@ -5,7 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { AppScreen } from '@/components/app-screen';
 import { colors, radius, spacing, type } from '@/theme';
-import { getAlarmPermissionStatus, requestAlarmPermissions } from '@/services/nativeAlarm';
+import { getAlarmDiagnostics, openBatterySettings, openExactAlarmSettings, requestAlarmPermissions, type AlarmDiagnostics } from '@/services/nativeAlarm';
 import { AppPreferences, DEFAULT_PREFERENCES, loadPreferences, savePreferences } from '@/services/storage';
 import { playSoundEffect } from '@/services/sound-effects';
 import { previewRingtone, stopPreview } from '@/services/alarm-ringer';
@@ -26,8 +26,15 @@ export default function Settings() {
   const { t, language } = useTranslation();
   const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
   const [notificationStatus, setNotificationStatus] = useState('Checking…');
+  const [diagnostics, setDiagnostics] = useState<AlarmDiagnostics | null>(null);
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
-  useEffect(() => { loadPreferences().then(setPreferences); getAlarmPermissionStatus().then((status) => setNotificationStatus(status.granted ? t('allowed') : t('notAllowed'))).catch(() => setNotificationStatus(t('notAllowed'))); }, [language]);
+  useEffect(() => {
+    loadPreferences().then(setPreferences);
+    getAlarmDiagnostics().then((value) => {
+      setDiagnostics(value);
+      setNotificationStatus(value.notifications ? t('allowed') : t('notAllowed'));
+    }).catch(() => setNotificationStatus(t('notAllowed')));
+  }, [language]);
   const update = (next: AppPreferences) => { setPreferences(next); savePreferences(next); };
 
   const changeLanguage = () => {
@@ -73,7 +80,10 @@ export default function Settings() {
 
     <Text style={styles.sectionTitle}>{t('permissions')}</Text>
     <View style={styles.card}>
-      <Row label={t('notifications')} value={notificationStatus} onPress={async () => { const granted = await requestAlarmPermissions(); setNotificationStatus(granted ? t('allowed') : t('notAllowed')); }} />
+      <Row label={t('notifications')} value={notificationStatus} onPress={async () => { const granted = await requestAlarmPermissions(); const value = await getAlarmDiagnostics(); setDiagnostics(value); setNotificationStatus(value.notifications ? t('allowed') : t('notAllowed')); }} />
+      <Row label={t('exactAlarmPermission')} value={diagnostics ? (diagnostics.exactAlarm ? t('allowed') : t('notAllowed')) : '…'} onPress={openExactAlarmSettings} />
+      <Row label={t('batteryOptimization')} value={diagnostics ? (diagnostics.batteryOptimized ? t('unrestricted') : t('restricted')) : '…'} onPress={openBatterySettings} />
+      <Row label={t('scheduledAlarms')} value={diagnostics ? String(diagnostics.scheduledCount) : '…'} />
       <Row label={t('backgroundUsage')} value={t('androidSystemSettings')} onPress={() => Linking.openSettings()} />
     </View>
 

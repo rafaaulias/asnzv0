@@ -16,17 +16,33 @@ export default function RootLayout() {
   useEffect(() => { hasSeenPermissions().then((seen) => { if (!seen && pathname !== '/permissions') router.replace('/permissions'); }); loadPreferences().then((preferences) => setLanguage(preferences.language)); }, [pathname, router]);
   useEffect(() => {
     let subscription: { remove: () => void } | null = null;
-    import('@/services/nativeAlarm').then(({ addAlarmResponseHandler, consumePendingAlarm }) => {
+    let lastFiredKey = '';
+    import('@/services/nativeAlarm').then(({ addAlarmResponseHandler, consumePendingAlarm, checkFiredAlarm }) => {
       subscription = addAlarmResponseHandler((alarmId) => router.push({ pathname: '/active-alarm', params: alarmId ? { alarmId } : {} }));
-      // A press on the alarm notification while the app was backgrounded is
-      // recorded as a pending alarm; open the ringer screen once the app is active.
+      const openAlarm = async (alarmId?: string) => router.push({ pathname: '/active-alarm', params: alarmId && alarmId !== 'true' ? { alarmId } : {} });
       const stateSubscription = AppState.addEventListener('change', async (state) => {
         if (state !== 'active') return;
+        // Full-screen intent on a warm launch fires no PRESS event; the
+        // displayed-notification check is the only reliable signal.
+        const fired = await checkFiredAlarm();
+        if (fired !== undefined) { await openAlarm(fired); return; }
         const pending = await consumePendingAlarm();
-        if (pending !== undefined) router.push({ pathname: '/active-alarm', params: pending ? { alarmId: pending } : {} });
+        if (pending !== undefined) await openAlarm(pending);
       });
+      // In-app fallback: if the OS notification is delayed or dropped (common
+      // on aggressive ROMs), the app itself opens the ringer at fire time.
+      const watcher = setInterval(async () => {
+        if (AppState.currentState !== 'active') return;
+        const now = new Date();
+        const key = `${now.getHours()}:${now.getMinutes()}`;
+        if (key === lastFiredKey) return;
+        const alarms = await import('@/services/storage').then(({ loadAlarms }) => loadAlarms());
+        const weekday = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][now.getDay()];
+        const due = alarms.find((alarm) => alarm.enabled && alarm.days.includes(weekday) && alarm.time === `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+        if (due) { lastFiredKey = key; await openAlarm(due.id); }
+      }, 15_000);
       const previousRemove = subscription.remove;
-      subscription.remove = () => { previousRemove(); stateSubscription.remove(); };
+      subscription.remove = () => { previousRemove(); stateSubscription.remove(); clearInterval(watcher); };
     });
     return () => subscription?.remove();
   }, [router]);
