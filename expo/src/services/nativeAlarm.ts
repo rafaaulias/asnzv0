@@ -12,6 +12,15 @@ const SOUND_RESOURCES = { default: 'radar', soft: 'bell', bright: 'beep' } as co
 
 const WEEKDAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
 
+// The last native scheduling error is kept so the Settings diagnostics screen
+// can surface why triggers are missing instead of failing silently.
+let lastScheduleError: string | null = null;
+
+function toMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return typeof error === 'string' ? error : JSON.stringify(error);
+}
+
 // Matches Date.getDay(): SUN = 0 ... SAT = 6.
 export function dayToWeekday(day: string) {
   return WEEKDAY_NAMES.indexOf(day.toUpperCase() as (typeof WEEKDAY_NAMES)[number]);
@@ -25,18 +34,27 @@ async function getNotifee() {
   if (isExpoGo || Platform.OS !== 'android') return null;
   if (!channelReady) {
     channelReady = (async () => {
-      await notifee.createChannel({
-        id: CHANNEL_ID,
-        name: 'Alarms',
-        importance: AndroidImportance.HIGH,
-        sound: 'radar',
-        vibration: true,
-        vibrationPattern: [0, 250, 150, 250],
-        bypassDnd: false,
-        visibility: 1,
-      });
+      try {
+        await notifee.createChannel({
+          id: CHANNEL_ID,
+          name: 'Alarms',
+          importance: AndroidImportance.HIGH,
+          sound: 'radar',
+          vibration: true,
+          vibrationPattern: [0, 250, 150, 250],
+          bypassDnd: false,
+          visibility: 1,
+        });
+      } catch (error) {
+        // Some OEM ROMs reject extended channel fields; a minimal channel
+        // still fires alarms (with the default sound) instead of none.
+        lastScheduleError = `channel: ${toMessage(error)}`;
+        console.log('[v0] Full channel creation failed, retrying minimal', error);
+        await notifee.createChannel({ id: CHANNEL_ID, name: 'Alarms', importance: AndroidImportance.HIGH });
+      }
       return notifee;
     })().catch((error) => {
+      lastScheduleError = `channel: ${toMessage(error)}`;
       console.log('[v0] Alarm channel creation failed, will retry', error);
       channelReady = null;
       return null;
@@ -50,19 +68,20 @@ export type AlarmDiagnostics = {
   exactAlarm: boolean;
   batteryOptimized: boolean;
   scheduledCount: number;
+  lastError: string | null;
 };
 
 export async function getAlarmDiagnostics(): Promise<AlarmDiagnostics> {
-  if (isExpoGo || Platform.OS !== 'android') return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: 0 };
+  if (isExpoGo || Platform.OS !== 'android') return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: 0, lastError: 'Expo Go unsupported' };
   try {
     const settings = await notifee.getNotificationSettings();
     const notifications = settings.authorizationStatus === 1 || settings.authorizationStatus === 2;
     const exactAlarm = settings.android?.alarm === 1;
     const batteryOptimized = !(await notifee.isBatteryOptimizationEnabled().catch(() => true));
     const scheduledCount = (await notifee.getTriggerNotificationIds().catch(() => [])).length;
-    return { notifications, exactAlarm, batteryOptimized, scheduledCount };
-  } catch {
-    return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: 0 };
+    return { notifications, exactAlarm, batteryOptimized, scheduledCount, lastError: scheduledCount === 0 ? lastScheduleError : null };
+  } catch (error) {
+    return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: 0, lastError: toMessage(error) };
   }
 }
 
@@ -131,8 +150,29 @@ export async function scheduleNativeAlarm(alarmId: string, hour: number, minute:
         },
       }, trigger);
       scheduled += 1;
+      lastScheduleError = null;
     } catch (error) {
-      console.log('[v0] Failed to schedule alarm trigger', alarmId, weekday, error);
+      // Retry with the minimal fields some ROMs reject; a plain trigger still
+      // wakes the app with the channel sound instead of never firing.
+      try {
+        await module.createTriggerNotification({
+          id: `${alarmId}-${weekday}`,
+          title: 'Anti-Snooze alarm',
+          body: 'Complete your challenge to unlock.',
+          data: { alarmId },
+          android: {
+            channelId: CHANNEL_ID,
+            smallIcon: 'ic_launcher',
+            pressAction: { id: 'default', launchActivity: 'default' },
+            fullScreenAction: { id: 'default', launchActivity: 'default' },
+          },
+        }, trigger);
+        scheduled += 1;
+        lastScheduleError = null;
+      } catch (retryError) {
+        lastScheduleError = toMessage(retryError);
+        console.log('[v0] Failed to schedule alarm trigger', alarmId, weekday, retryError);
+      }
     }
   }));
   console.log('[v0] Scheduled', scheduled, 'trigger(s) for alarm', alarmId);
@@ -169,7 +209,7 @@ export async function checkFiredAlarm() {
   if (isExpoGo || Platform.OS !== 'android') return undefined;
   try {
     const displayed = await notifee.getDisplayedNotifications();
-    const alarm = displayed.find((item) => item.notification.android?.channelId === CHANNEL_ID && item.id?.startsWith('alarm'));
+    const alarm = displayed.find((item) => item.notification.android?.channelId === CHANNEL_ID);
     if (!alarm) return undefined;
     const alarmId = alarm.notification.data?.alarmId;
     if (alarm.id) await notifee.cancelNotification(alarm.id).catch(() => undefined);

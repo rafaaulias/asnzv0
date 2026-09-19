@@ -5,8 +5,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { AppScreen } from '@/components/app-screen';
 import { colors, radius, spacing, type } from '@/theme';
-import { getAlarmDiagnostics, openBatterySettings, openExactAlarmSettings, requestAlarmPermissions, type AlarmDiagnostics } from '@/services/nativeAlarm';
-import { AppPreferences, DEFAULT_PREFERENCES, loadPreferences, savePreferences } from '@/services/storage';
+import { getAlarmDiagnostics, openBatterySettings, openExactAlarmSettings, requestAlarmPermissions, syncAlarms, type AlarmDiagnostics } from '@/services/nativeAlarm';
+import { AppPreferences, DEFAULT_PREFERENCES, loadAlarms, loadPreferences, savePreferences } from '@/services/storage';
 import { playSoundEffect } from '@/services/sound-effects';
 import { previewRingtone, stopPreview } from '@/services/alarm-ringer';
 import { useTranslation } from '@/i18n';
@@ -74,6 +74,14 @@ export default function Settings() {
     void previewRingtone(key, preferences.customRingtoneUri);
   };
 
+  const resyncAlarms = async () => {
+    void playSoundEffect('click');
+    const alarms = await loadAlarms();
+    const scheduled = await syncAlarms(alarms);
+    console.log('[v0] Manual resync scheduled', scheduled, 'trigger(s)');
+    setDiagnostics(await getAlarmDiagnostics());
+  };
+
   return <AppScreen>
     <Text style={type.largeTitle}>{t('settings')}</Text>
     <Text style={styles.sub}>{t('settingsSubtitle')}</Text>
@@ -83,8 +91,9 @@ export default function Settings() {
       <Row label={t('notifications')} value={notificationStatus} onPress={async () => { const granted = await requestAlarmPermissions(); const value = await getAlarmDiagnostics(); setDiagnostics(value); setNotificationStatus(value.notifications ? t('allowed') : t('notAllowed')); }} />
       <Row label={t('exactAlarmPermission')} value={diagnostics ? (diagnostics.exactAlarm ? t('allowed') : t('notAllowed')) : '…'} onPress={openExactAlarmSettings} />
       <Row label={t('batteryOptimization')} value={diagnostics ? (diagnostics.batteryOptimized ? t('unrestricted') : t('restricted')) : '…'} onPress={openBatterySettings} />
-      <Row label={t('scheduledAlarms')} value={diagnostics ? String(diagnostics.scheduledCount) : '…'} />
+      <Row label={t('scheduledAlarms')} value={diagnostics ? `${diagnostics.scheduledCount} — ${t('tapToResync')}` : '…'} onPress={resyncAlarms} />
       <Row label={t('backgroundUsage')} value={t('androidSystemSettings')} onPress={() => Linking.openSettings()} />
+      {diagnostics?.lastError ? <Text style={[styles.detail, { color: '#C62828', paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }]}>{diagnostics.lastError}</Text> : null}
     </View>
 
     <Text style={styles.sectionTitle}>{t('ringtoneSelection')}</Text>
