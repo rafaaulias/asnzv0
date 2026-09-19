@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { Haptics } from '@/services/feedback';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { fonts } from '@/theme';
 import { colors } from '@/theme';
@@ -18,17 +19,29 @@ type TimeWheelProps = {
 // the middle visible slot land exactly on the selected value.
 export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProps) {
   const listRef = useRef<ScrollView>(null);
-  const padded = ['', ...values, ''];
+  const cycleCount = 5;
+  const cycleValues = useMemo(() => Array.from({ length: cycleCount }, () => values).flat(), [values]);
   const selectedIndex = Math.max(0, values.indexOf(value));
-  const initialOffset = (selectedIndex + 1) * ITEM_HEIGHT;
+  const middleCycle = Math.floor(cycleCount / 2);
+  const initialIndex = middleCycle * values.length + selectedIndex;
+  const initialRenderIndex = initialIndex + 1;
+  const initialOffset = initialRenderIndex * ITEM_HEIGHT;
 
   useEffect(() => {
     listRef.current?.scrollTo({ y: initialOffset, animated: false });
   }, [initialOffset]);
 
   const commit = (offsetY: number) => {
-    const clamped = Math.min(Math.max(Math.round(offsetY / ITEM_HEIGHT) - 1, 0), values.length - 1);
-    if (values[clamped] !== value) onChange(values[clamped]);
+    const rawRenderIndex = Math.round(offsetY / ITEM_HEIGHT);
+    const valueIndex = (((rawRenderIndex - 1) % values.length) + values.length) % values.length;
+    const middleIndex = middleCycle * values.length + valueIndex + 1;
+    if (values[valueIndex] !== value) {
+      Haptics.selection();
+      onChange(values[valueIndex]);
+    }
+    if (Math.abs(rawRenderIndex - middleIndex) > values.length) {
+      requestAnimationFrame(() => listRef.current?.scrollTo({ y: middleIndex * ITEM_HEIGHT, animated: false }));
+    }
   };
 
   return (
@@ -46,7 +59,7 @@ export function TimeWheel({ values, value, onChange, width = 94 }: TimeWheelProp
         onMomentumScrollEnd={(event) => commit(event.nativeEvent.contentOffset.y)}
         scrollEventThrottle={16}
       >
-        {padded.map((item, index) => {
+        {['', ...cycleValues, ''].map((item, index) => {
           const isSelected = item !== '' && item === value;
           return (
             <View key={`${item}-${index}`} style={styles.item}>
