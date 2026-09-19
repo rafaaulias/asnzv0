@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, type } from '@/theme';
 import { loadAlarms, Alarm } from '@/services/storage';
 import { useKeepAwake } from 'expo-keep-awake';
+import { startRinging } from '@/services/alarm-ringer';
+import { useTranslation } from '@/i18n';
 
 export default function ActiveAlarm() {
-  useKeepAwake(); const router = useRouter(); const { alarmId } = useLocalSearchParams<{ alarmId?: string }>(); const [alarm, setAlarm] = useState<Alarm>();
+  useKeepAwake(); const { t } = useTranslation(); const router = useRouter(); const { alarmId } = useLocalSearchParams<{ alarmId?: string }>(); const [alarm, setAlarm] = useState<Alarm>();
   useEffect(() => { loadAlarms().then((items) => setAlarm(items.find((item) => item.id === alarmId) ?? items[0])); }, [alarmId]);
-  return <SafeAreaView style={styles.safe}><View style={styles.top}><View style={styles.live}><View style={styles.dot} /><Text style={styles.liveText}>ACTIVE ALARM</Text></View><Text style={type.caption}>NO SNOOZE</Text></View><View style={styles.center}><View style={styles.siren}><Ionicons name="volume-high" size={38} color={colors.paper} /></View><Text style={styles.time}>{alarm?.time ?? '06:30'}</Text><Text style={styles.label}>{alarm?.label ?? 'Morning Alarm'}</Text><Text style={styles.copy}>Your alarm is active. Complete the challenge to unlock your morning.</Text><View style={styles.ramp}><View style={styles.rampFill} /></View><Text style={styles.rampLabel}>SIREN ESCALATING · 35% → 85%</Text></View><Pressable style={styles.button} onPress={() => router.push({ pathname: '/challenge', params: { alarmId: alarm?.id } })}><Text style={styles.buttonText}>Start challenge</Text><Ionicons name="arrow-forward" color={colors.paper} size={18} /></Pressable></SafeAreaView>;
+  useEffect(() => { void startRinging(alarmId); }, [alarmId]);
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => subscription.remove();
+  }, []);
+  return <SafeAreaView style={styles.safe}><View style={styles.top}><View style={styles.live}><View style={styles.dot} /><Text style={styles.liveText}>{t('activeAlarm')}</Text></View><Text style={type.caption}>{t('noSnooze')}</Text></View><View style={styles.center}><View style={styles.siren}><Ionicons name="volume-high" size={38} color={colors.paper} /></View><Text style={styles.time}>{alarm?.time ?? '06:30'}</Text><Text style={styles.label}>{alarm?.label ?? 'Morning Alarm'}</Text><Text style={styles.copy}>{t('activeAlarmCopy')}</Text><View style={styles.ramp}><View style={styles.rampFill} /></View><Text style={styles.rampLabel}>{t('sirenEscalating')}</Text></View><Pressable style={styles.button} onPress={() => router.push({ pathname: '/challenge', params: { alarmId: alarm?.id } })}><Text style={styles.buttonText}>{t('startChallenge')}</Text><Ionicons name="arrow-forward" color={colors.paper} size={18} /></Pressable></SafeAreaView>;
 }
 const styles = StyleSheet.create({ safe:{flex:1,backgroundColor:colors.ink,padding:spacing.lg,justifyContent:'space-between'}, top:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingTop:spacing.sm},live:{flexDirection:'row',alignItems:'center',gap:8},dot:{width:8,height:8,borderRadius:8,backgroundColor:colors.orange},liveText:{color:colors.paper,fontSize:12,fontWeight:'800',letterSpacing:1.2}, center:{alignItems:'center',gap:spacing.sm},siren:{width:78,height:78,borderRadius:39,backgroundColor:colors.orange,alignItems:'center',justifyContent:'center',marginBottom:spacing.md},time:{fontSize:68,fontWeight:'800',letterSpacing:-3,color:colors.paper},label:{fontSize:18,fontWeight:'700',color:'#BDBDBD'},copy:{...type.body,color:'#BDBDBD',textAlign:'center',lineHeight:24,maxWidth:300,marginTop:spacing.md},ramp:{width:230,height:6,borderRadius:6,backgroundColor:'#2D2D2D',overflow:'hidden',marginTop:spacing.lg},rampFill:{width:'72%',height:'100%',backgroundColor:colors.orange},rampLabel:{fontSize:10,fontWeight:'800',letterSpacing:1,color:'#858585'},button:{backgroundColor:colors.paper,padding:spacing.md,borderRadius:radius.md,flexDirection:'row',justifyContent:'center',alignItems:'center',gap:spacing.sm,marginBottom:spacing.sm},buttonText:{color:colors.ink,fontWeight:'800',fontSize:16}});

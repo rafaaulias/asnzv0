@@ -5,7 +5,9 @@
     "scheme": "anti-snooze",
     "version": "1.0.0",
     "updates": {
-      "checkAutomatically": "ON_ERROR_RECOVERY",
+      "url": "https://u.expo.dev/6cfdd03f-96d0-46aa-8abc-767cb46bb1be",
+      "runtimeVersion": { "policy": "appVersion" },
+      "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
     "orientation": "portrait",
@@ -17,20 +19,38 @@
           "sounds": [
             "./assets/sounds/radar.mp3",
             "./assets/sounds/bell.mp3",
-            "./assets/sounds/beep.mp3"
+            "./assets/sounds/beep.mp3",
+            "./assets/sounds/keyboard.mp3",
+            "./assets/sounds/click.mp3",
+            "./assets/sounds/toggle.mp3"
           ]
         }
       ],
       "expo-router",
       "expo-audio",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      "./plugins/with-alarm-activity.js"
     ],
     "android": {
       "package": "com.antisnooze.alarm",
       "permissions": [
         "SCHEDULE_EXACT_ALARM",
         "USE_EXACT_ALARM",
+        "USE_FULL_SCREEN_INTENT",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM",
+        "USE_FULL_SCREEN_INTENT",
         "WAKE_LOCK",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
@@ -49,6 +69,8 @@
         "NSMotionUsageDescription": "Anti-Snooze uses motion to verify shake challenges.",
         "UIBackgroundModes": [
           "audio",
+          "fetch",
+          "audio",
           "fetch"
         ]
       }
@@ -61,6 +83,7 @@
       "eas": {
         "projectId": "6cfdd03f-96d0-46aa-8abc-767cb46bb1be"
       }
-    }
+    },
+    "runtimeVersion": "1.0.0"
   }
 }

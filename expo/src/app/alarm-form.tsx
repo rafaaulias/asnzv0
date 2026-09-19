@@ -7,18 +7,22 @@ import { TimeWheel } from '@/components/time-wheel';
 import { usePageMargin } from '@/hooks/use-page-margin';
 import { Alarm, ChallengeType, loadAlarms, saveAlarms } from '@/services/storage';
 import { colors, fonts, radius, spacing, type } from '@/theme';
+import { requestAlarmPermissions, scheduleNativeAlarm } from '@/services/nativeAlarm';
+import { useTranslation } from '@/i18n';
 
 const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+const DAY_KEYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DEFAULT_DAYS = [false, true, true, true, true, true, false];
 
-const CHALLENGES: { type: ChallengeType; icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string }[] = [
-  { type: 'math', icon: 'calculator-outline', title: 'Math Puzzle', subtitle: 'Solve equations to silence the alarm' },
-  { type: 'shake', icon: 'phone-portrait-outline', title: 'Shake Phone', subtitle: 'Shake your phone to dismiss it' },
+const CHALLENGES: { type: ChallengeType; icon: keyof typeof Ionicons.glyphMap; titleKey: 'mathPuzzleTitle' | 'shakePhoneTitle'; subtitleKey: 'solveEquations' | 'shakeToDismiss' }[] = [
+  { type: 'math', icon: 'calculator-outline', titleKey: 'mathPuzzleTitle', subtitleKey: 'solveEquations' },
+  { type: 'shake', icon: 'phone-portrait-outline', titleKey: 'shakePhoneTitle', subtitleKey: 'shakeToDismiss' },
 ];
 
 export default function AlarmForm() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { alarmId } = useLocalSearchParams<{ alarmId?: string }>();
   const margin = usePageMargin();
@@ -52,7 +56,7 @@ export default function AlarmForm() {
       setVolume(alarm.volume ?? 80);
       setSound(alarm.sound ?? 'default');
       setVibration(alarm.vibration ?? true);
-      setDays(DAY_LETTERS.map((day) => alarm.days.includes(day)));
+      setDays(DAY_KEYS.map((day, index) => alarm.days.includes(day) || alarm.days.includes(DAY_LETTERS[index])));
     });
   }, [alarmId]);
 
@@ -61,10 +65,10 @@ export default function AlarmForm() {
 
   const remove = () => {
     if (!alarmId) return;
-    Alert.alert('Delete Alarm', 'This alarm will be removed permanently.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('deleteAlarmTitle'), t('deleteAlarmBody'), [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('delete'),
         style: 'destructive',
         onPress: async () => {
           const current = await loadAlarms();
@@ -76,16 +80,20 @@ export default function AlarmForm() {
   };
 
   const save = async () => {
+    if (!days.some(Boolean)) {
+      Alert.alert(t('chooseDayTitle'), t('chooseDayBody'));
+      return;
+    }
     const hourNumber = Number(hour) % 12;
     const hour24 = period === 'AM' ? hourNumber : hourNumber + 12;
     const selectedDays = DAY_LETTERS.filter((_, i) => days[i]);
     const newAlarm: Alarm = {
       id: alarmId ?? `alarm-${Date.now()}`,
       time: `${String(hour24).padStart(2, '0')}:${minute}`,
-      label: label.trim() || 'Wake Up',
+      label: label.trim() || t('wakeUp'),
       enabled: true,
       challengeType,
-      days: selectedDays,
+      days: DAY_KEYS.filter((_, index) => days[index]),
       mathDifficulty,
       mathProblemCount: 2,
       shakeCountTarget,
@@ -96,16 +104,20 @@ export default function AlarmForm() {
     const current = await loadAlarms();
     const next = isEditing ? current.map((alarm) => (alarm.id === newAlarm.id ? { ...alarm, ...newAlarm } : alarm)) : [...current, newAlarm];
     await saveAlarms(next);
+    if (newAlarm.enabled) {
+      const granted = await requestAlarmPermissions();
+      if (granted) await scheduleNativeAlarm(newAlarm.id, hour24, Number(minute), DAY_KEYS.map((_, index) => (days[index] ? index : -1)).filter((day) => day >= 0), sound, vibration);
+    }
     router.back();
   };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={[styles.header, { paddingHorizontal: margin, paddingTop: 8 }]}>
+      <View style={[styles.header, { paddingHorizontal: margin, paddingTop: 28 }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} style={styles.roundButton}>
           <Ionicons name="close" size={20} color={colors.ink} />
         </Pressable>
-        <Text style={type.headline}>{isEditing ? 'Edit Alarm' : 'New Alarm'}</Text>
+        <Text style={type.headline}>{isEditing ? t('editAlarm') : t('newAlarm')}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Save alarm" onPress={save} style={[styles.roundButton, styles.saveButton]}>
           <Ionicons name="checkmark" size={20} color={colors.paper} />
         </Pressable>
@@ -128,7 +140,7 @@ export default function AlarmForm() {
         </View>
 
         <View style={styles.section}>
-          <Text style={type.caption}>REPEAT</Text>
+          <Text style={type.caption}>{t('repeat')}</Text>
           <View style={styles.days}>
             {DAY_LETTERS.map((letter, index) => (
               <Pressable key={`${letter}-${index}`} onPress={() => toggleDay(index)} style={({ pressed }) => [styles.day, days[index] && styles.dayActive, pressed && styles.pressed]}>
@@ -139,13 +151,13 @@ export default function AlarmForm() {
         </View>
 
         <View style={styles.section}>
-          <Text style={type.caption}>LABEL</Text>
+          <Text style={type.caption}>{t('label')}</Text>
           <View style={styles.labelField}>
             <Ionicons name="pencil-outline" size={16} color={colors.label} />
             <TextInput
               value={label}
               onChangeText={setLabel}
-              placeholder="e.g. Work, Gym, School"
+              placeholder={t('labelPlaceholder')}
               placeholderTextColor={colors.label}
               style={styles.labelInput}
             />
@@ -154,9 +166,9 @@ export default function AlarmForm() {
 
         <View style={styles.section}>
           <View style={styles.challengeHeader}>
-            <Text style={type.caption}>WAKE-UP CHALLENGE</Text>
+            <Text style={type.caption}>{t('wakeUpChallenge')}</Text>
             <View style={styles.requiredBadge}>
-              <Text style={styles.requiredText}>Required</Text>
+              <Text style={styles.requiredText}>{t('required')}</Text>
             </View>
           </View>
           {CHALLENGES.map((challenge) => {
@@ -169,8 +181,8 @@ export default function AlarmForm() {
               >
                 <Ionicons name={challenge.icon} size={22} color={isSelected ? colors.paper : colors.ink} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.challengeTitle, isSelected && styles.challengeTitleActive]}>{challenge.title}</Text>
-                  <Text style={[styles.challengeSubtitle, isSelected && styles.challengeSubtitleActive]}>{challenge.subtitle}</Text>
+                  <Text style={[styles.challengeTitle, isSelected && styles.challengeTitleActive]}>{t(challenge.titleKey)}</Text>
+                  <Text style={[styles.challengeSubtitle, isSelected && styles.challengeSubtitleActive]}>{t(challenge.subtitleKey)}</Text>
                 </View>
                 {isSelected ? (
                   <View style={styles.checkCircle}>
@@ -183,24 +195,24 @@ export default function AlarmForm() {
           {challengeType === 'math' ? (
             <View style={styles.difficultyCard}>
               <View style={styles.difficultyHeader}>
-                <View style={styles.rowValue}><Ionicons name="flash-outline" size={16} color={colors.ink} /><Text style={styles.difficultyTitle}>Difficulty & Intensity</Text></View>
-                <Text style={styles.difficultyMode}>{mathDifficulty === 'easy' ? 'Easy Mode' : mathDifficulty === 'medium' ? 'Medium Mode' : 'Hard Mode'}</Text>
+                <View style={styles.rowValue}><Ionicons name="flash-outline" size={16} color={colors.ink} /><Text style={styles.difficultyTitle}>{t('difficultyIntensity')}</Text></View>
+                <Text style={styles.difficultyMode}>{mathDifficulty === 'easy' ? t('easyMode') : mathDifficulty === 'medium' ? t('mediumMode') : t('hardMode')}</Text>
               </View>
-              <Text style={styles.difficultyLabel}>Math Complexity</Text>
+              <Text style={styles.difficultyLabel}>{t('mathComplexity')}</Text>
               <View style={styles.segmentedControl}>
-                {(['easy', 'medium', 'hard'] as const).map((level) => <Pressable key={level} onPress={() => setMathDifficulty(level)} style={[styles.segment, mathDifficulty === level && styles.segmentActive]}><Text style={[styles.segmentText, mathDifficulty === level && styles.segmentTextActive]}>{level[0].toUpperCase() + level.slice(1)}</Text></Pressable>)}
+                {(['easy', 'medium', 'hard'] as const).map((level) => <Pressable key={level} onPress={() => setMathDifficulty(level)} style={[styles.segment, mathDifficulty === level && styles.segmentActive]}><Text style={[styles.segmentText, mathDifficulty === level && styles.segmentTextActive]}>{t(level)}</Text></Pressable>)}
               </View>
             </View>
           ) : null}
           {challengeType === 'shake' ? (
             <View style={styles.difficultyCard}>
               <View style={styles.difficultyHeader}>
-                <View style={styles.rowValue}><Ionicons name="flash-outline" size={16} color={colors.ink} /><Text style={styles.difficultyTitle}>Difficulty & Intensity</Text></View>
-                <Text style={styles.difficultyMode}>{shakeCountTarget} Shakes</Text>
+                <View style={styles.rowValue}><Ionicons name="flash-outline" size={16} color={colors.ink} /><Text style={styles.difficultyTitle}>{t('difficultyIntensity')}</Text></View>
+                <Text style={styles.difficultyMode}>{shakeCountTarget} {t('Shakes')}</Text>
               </View>
-              <Text style={styles.difficultyLabel}>Required Shakes</Text>
+              <Text style={styles.difficultyLabel}>{t('requiredShakes')}</Text>
               <View style={styles.segmentedControl}>
-                {[15, 30, 50, 75].map((target) => <Pressable key={target} onPress={() => setShakeCountTarget(target)} style={[styles.segment, shakeCountTarget === target && styles.segmentActive]}><Text style={[styles.segmentText, shakeCountTarget === target && styles.segmentTextActive]}>{target} shakes</Text></Pressable>)}
+                {[15, 30, 50, 75].map((target) => <Pressable key={target} onPress={() => setShakeCountTarget(target)} style={[styles.segment, shakeCountTarget === target && styles.segmentActive]}><Text style={[styles.segmentText, shakeCountTarget === target && styles.segmentTextActive]}>{target} {t('shakes')}</Text></Pressable>)}
               </View>
             </View>
           ) : null}
@@ -210,7 +222,7 @@ export default function AlarmForm() {
           <View style={styles.volumeHeader}>
             <View style={styles.rowValue}>
               <Ionicons name="volume-medium-outline" size={17} color={colors.ink} />
-              <Text style={type.body}>Alarm Volume</Text>
+              <Text style={type.body}>{t('alarmVolume')}</Text>
             </View>
             <Text style={styles.volumeBadge}>{Math.round(volume)}%</Text>
           </View>
@@ -233,14 +245,14 @@ export default function AlarmForm() {
               <Ionicons name="add" size={16} color={colors.ink} />
             </Pressable>
           </View>
-          <Row label="Sound" value={sound === 'default' ? 'Radar Chime' : sound === 'soft' ? 'Soft Bell' : 'Bright Pulse'} onPress={() => setSound((current) => current === 'default' ? 'soft' : current === 'soft' ? 'bright' : 'default')} />
-          <Row label="Vibration" value={vibration ? 'On' : 'Off'} onPress={() => setVibration((current) => !current)} />
+          <Row label={t('sound')} value={sound === 'default' ? t('radarChimeOption') : sound === 'soft' ? t('softBellOption') : t('brightPulseOption')} onPress={() => setSound((current) => current === 'default' ? 'soft' : current === 'soft' ? 'bright' : 'default')} />
+          <Row label={t('vibration')} value={vibration ? t('on') : t('off')} onPress={() => setVibration((current) => !current)} />
         </View>
 
         {isEditing ? (
           <Pressable onPress={remove} style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}>
             <Ionicons name="trash-outline" size={16} color="#D92D20" />
-            <Text style={styles.deleteText}>Delete Alarm</Text>
+            <Text style={styles.deleteText}>{t('deleteAlarm')}</Text>
           </Pressable>
         ) : null}
       </ScrollView>

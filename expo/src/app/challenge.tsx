@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useAudioPlayer } from 'expo-audio';
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, radius, spacing, type } from '@/theme';
 import { Alarm, createMathProblem, loadAlarms } from '@/services/storage';
-
-const TYPE_SOUND = require('../../assets/sounds/beep.mp3');
+import { playSoundEffect } from '@/services/sound-effects';
+import { useTranslation } from '@/i18n';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'];
 
 export default function Challenge() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { alarmId } = useLocalSearchParams<{ alarmId?: string }>();
   const [alarm, setAlarm] = useState<Alarm>();
@@ -18,7 +18,6 @@ export default function Challenge() {
   const [problemIndex, setProblemIndex] = useState(0);
   const [shakeCount, setShakeCount] = useState(0);
   const [error, setError] = useState(false);
-  const typingSound = useAudioPlayer(TYPE_SOUND);
 
   const isMath = alarm?.challengeType !== 'shake';
   const problem = useMemo(() => createMathProblem(alarm?.mathDifficulty ?? 'easy'), [alarm?.mathDifficulty, problemIndex]);
@@ -28,6 +27,11 @@ export default function Challenge() {
   useEffect(() => {
     loadAlarms().then((items) => setAlarm(items.find((item) => item.id === alarmId) ?? items[0]));
   }, [alarmId]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (alarm?.challengeType !== 'shake') return;
@@ -67,8 +71,7 @@ export default function Challenge() {
   };
 
   const handleKey = (key: string) => {
-    typingSound.seekTo(0);
-    typingSound.play();
+    void playSoundEffect('keyboard');
     if (key === 'C') setAnswer('');
     else if (key === '⌫') setAnswer((current) => current.slice(0, -1));
     else enterDigit(key);
@@ -77,28 +80,31 @@ export default function Challenge() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={type.headline}>{isMath ? 'Math puzzle' : 'Shake challenge'}</Text>
+        <Text style={type.headline}>{isMath ? t('mathChallenge') : t('shakeChallenge')}</Text>
         <Text style={type.caption}>{isMath ? `${problemIndex + 1} / ${problemCount}` : `${shakeCount} / ${shakeTarget}`}</Text>
       </View>
       {isMath ? <MathChallenge answer={answer} error={error} problem={problem} onKey={handleKey} onSubmit={submitAnswer} /> : <ShakeChallenge count={shakeCount} target={shakeTarget} />}
+
     </SafeAreaView>
   );
 }
 
 function MathChallenge({ answer, error, problem, onKey, onSubmit }: { answer: string; error: boolean; problem: { question: string; answer: number }; onKey: (key: string) => void; onSubmit: () => void }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.body}>
-      <Text style={styles.eyebrow}>SOLVE TO DISMISS</Text>
+      <Text style={styles.eyebrow}>{t('solveToDismiss')}</Text>
       <Text style={styles.question}>{problem.question}</Text>
-      <View style={[styles.answer, error && styles.answerError]}><Text style={styles.answerText}>{answer || (error ? 'Try again' : '...')}</Text></View>
+      <View style={[styles.answer, error && styles.answerError]}><Text style={styles.answerText}>{answer || (error ? t('tryAgain') : '...')}</Text></View>
       <View style={styles.grid}>{KEYS.map((key) => <Pressable key={key} onPress={() => onKey(key)} style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}><Text style={styles.keyText}>{key}</Text></Pressable>)}</View>
-      <Pressable disabled={!answer} onPress={onSubmit} style={[styles.submit, !answer && styles.disabled]}><Text style={styles.submitText}>Submit answer</Text></Pressable>
+      <Pressable disabled={!answer} onPress={onSubmit} style={[styles.submit, !answer && styles.disabled]}><Text style={styles.submitText}>{t('submitAnswer')}</Text></Pressable>
     </View>
   );
 }
 
 function ShakeChallenge({ count, target }: { count: number; target: number }) {
-  return <View style={styles.body}><View style={styles.shakeCircle}><Text style={styles.percent}>{Math.round((count / target) * 100)}%</Text><Text style={styles.shakeLabel}>{count} / {target}</Text></View><Text style={styles.shakeTitle}>Shake to unlock</Text><Text style={styles.copy}>Move your phone with full, deliberate shakes. One impulse counts every 200ms.</Text></View>;
+  const { t } = useTranslation();
+  return <View style={styles.body}><View style={styles.shakeCircle}><Text style={styles.percent}>{Math.round((count / target) * 100)}%</Text><Text style={styles.shakeLabel}>{count} / {target}</Text></View><Text style={styles.shakeTitle}>{t('shakeToUnlock')}</Text><Text style={styles.copy}>{t('shakeCopy')}</Text></View>;
 }
 
 const styles = StyleSheet.create({
