@@ -88,12 +88,29 @@ export async function getAlarmDiagnostics(): Promise<AlarmDiagnostics> {
 // Kept for the onboarding flow only. Scheduling must never be gated on this.
 export async function requestAlarmPermissions() {
   try {
-    await notifee.requestPermission();
-    await notifee.openAlarmPermissionSettings().catch(() => undefined);
     const settings = await notifee.getNotificationSettings();
-    return (settings.authorizationStatus === 1 || settings.authorizationStatus === 2) && settings.android?.alarm === 1;
+    const notificationsGranted = settings.authorizationStatus === 1 || settings.authorizationStatus === 2;
+    const alarmGranted = settings.android?.alarm === 1;
+    // Only surface system screens for what is actually missing — opening the
+    // alarms page unconditionally made every save bounce the user to Settings.
+    if (!notificationsGranted) await notifee.requestPermission();
+    if (!alarmGranted) await notifee.openAlarmPermissionSettings().catch(() => undefined);
+    const updated = await notifee.getNotificationSettings();
+    return (updated.authorizationStatus === 1 || updated.authorizationStatus === 2) && updated.android?.alarm === 1;
   } catch {
     return false;
+  }
+}
+
+// Full-screen intents are only delivered when the app may draw over other
+// apps; several ROMs (XOS included) ship with that access denied by default.
+export async function openOverlaySettings() {
+  try {
+    await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.MANAGE_OVERLAY_PERMISSION, {
+      data: `package:${Constants.expoConfig?.android?.package ?? 'com.antisnooze.alarm'}`,
+    });
+  } catch {
+    await Linking.openSettings().catch(() => undefined);
   }
 }
 
@@ -121,6 +138,10 @@ function nextOccurrence(hour: number, minute: number, weekday: number) {
   target.setHours(hour, minute, 0, 0);
   if (delta === 0 && target.getTime() <= now.getTime()) delta = 7;
   target.setDate(now.getDate() + delta);
+  // Notifee rejects timestamps that are not in the future; saving an alarm for
+  // the current minute made creation fail intermittently (random trigger
+  // counts). Keep a two-minute lead and roll a week forward when needed.
+  if (target.getTime() - now.getTime() < 120_000) target.setDate(target.getDate() + 7);
   return Math.floor(target.getTime() / 1000) * 1000;
 }
 
