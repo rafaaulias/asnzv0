@@ -4,6 +4,7 @@ import { AppScreen } from '@/components/app-screen';
 import { colors, radius, spacing, type } from '@/theme';
 import { getAlarmPermissionStatus, requestAlarmPermissions } from '@/services/nativeAlarm';
 import { AppPreferences, DEFAULT_PREFERENCES, loadPreferences, savePreferences } from '@/services/storage';
+import { playSoundEffect } from '@/services/sound-effects';
 
 function Row({ label, value, onPress, toggle, enabled, onToggle }: { label: string; value?: string; onPress?: () => void; toggle?: boolean; enabled?: boolean; onToggle?: (value: boolean) => void }) {
   const content = <><View><Text style={type.body}>{label}</Text>{value ? <Text style={styles.detail}>{value}</Text> : null}</View>{toggle ? <Switch value={enabled} onValueChange={onToggle} trackColor={{ false: colors.disabled, true: colors.ink }} thumbColor={colors.paper} /> : <Text style={type.subhead}>›</Text>}</>;
@@ -21,10 +22,10 @@ export default function Settings() {
       <Row label="Background usage" value="Android system settings" onPress={() => Linking.openSettings()} />
     </View>
     <Text style={styles.sectionTitle}>App Preferences</Text><View style={styles.card}>
-      <Row label="Language" value={preferences.language === 'en' ? 'English' : 'Indonesia'} onPress={() => update({ ...preferences, language: preferences.language === 'en' ? 'id' : 'en' })} />
+      <Row label={preferences.language === 'en' ? 'Language' : 'Bahasa'} value={preferences.language === 'en' ? 'English' : 'Indonesia'} onPress={() => { void playSoundEffect('click'); update({ ...preferences, language: preferences.language === 'en' ? 'id' : 'en' }); }} />
       <Row label="Keep screen awake" toggle enabled={preferences.keepAwake} onToggle={(keepAwake) => update({ ...preferences, keepAwake })} />
-      <Row label="Sound effects" toggle enabled={preferences.soundEffects} onToggle={(soundEffects) => update({ ...preferences, soundEffects })} />
-      <Row label="Haptics" toggle enabled={preferences.haptics} onToggle={(haptics) => update({ ...preferences, haptics })} />
+      <Row label={preferences.language === 'en' ? 'Sound effects' : 'Efek suara'} toggle enabled={preferences.soundEffects} onToggle={(soundEffects) => { void playSoundEffect('switch'); update({ ...preferences, soundEffects }); }} />
+      <Row label={preferences.language === 'en' ? 'Haptics' : 'Haptik'} toggle enabled={preferences.haptics} onToggle={(haptics) => { void playSoundEffect('switch'); update({ ...preferences, haptics }); }} />
     </View>
     <Text style={styles.sectionTitle}>About Anti-Snooze</Text><View style={styles.card}><Row label="Storage" value="On device" /><Row label="Privacy" value="No account required" /></View><Text style={styles.foot}>Alarm scheduling and challenge data stay on your device.</Text></AppScreen>;
 }

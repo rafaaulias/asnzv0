@@ -10,6 +10,7 @@ async function getNotifications() {
   if (isExpoGo) return null;
   notificationsPromise ??= import('expo-notifications')
     .then((module) => {
+      if (process.env.EXPO_OS === 'android') void module.setNotificationChannelAsync('alarm', { name: 'Alarms', importance: module.AndroidImportance.MAX, sound: 'radar.mp3', vibrationPattern: [0, 250, 150, 250], lockscreenVisibility: module.AndroidNotificationVisibility.PUBLIC });
       module.setNotificationHandler({ handleNotification: async () => ({ shouldPlaySound: true, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }) });
       return module;
     })
@@ -41,5 +42,8 @@ export async function scheduleNativeAlarm(alarmId: string, hour: number, minute:
 
 export async function cancelNativeAlarm(id: string) {
   const notifications = await getNotifications();
-  if (notifications) await notifications.cancelScheduledNotificationAsync(id);
+  if (!notifications) return;
+  const scheduled = await notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(scheduled.filter((item) => String(item.identifier).startsWith(`${id}-`)).map((item) => notifications.cancelScheduledNotificationAsync(item.identifier)));
+  await notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
 }

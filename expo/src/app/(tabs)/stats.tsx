@@ -4,14 +4,16 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { AppScreen } from '@/components/app-screen';
 import { colors, fonts, radius, spacing, type } from '@/theme';
-import { loadWakeStreak } from '@/services/storage';
+import { loadCompletionStats, loadWakeStreak } from '@/services/storage';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function Stats() {
   const [streak, setStreak] = useState(0);
+  const [stats, setStats] = useState({ dates: [false, false, false, false, false, false, false], math: 0, shake: 0, averageSeconds: 0 });
   useFocusEffect(useCallback(() => {
     loadWakeStreak().then(setStreak);
+    loadCompletionStats().then(setStats);
   }, []));
 
   return (
@@ -30,19 +32,19 @@ export default function Stats() {
           <View style={styles.gridLine} />
           <View style={[styles.gridLine, styles.gridLineMiddle]} />
           <View style={styles.bars}>
-            {days.map((day, index) => <View key={day} style={styles.barColumn}><View style={[styles.bar, index === 3 && styles.barActive]} /><Text style={[styles.dayLabel, index === 3 && styles.dayLabelActive]}>{day}</Text></View>)}
+            {days.map((day, index) => <View key={day} style={styles.barColumn}><View style={[styles.bar, stats.dates[index] && styles.barActive]} /><Text style={[styles.dayLabel, stats.dates[index] && styles.dayLabelActive]}>{day}</Text></View>)}
           </View>
         </View>
-        <Text style={styles.emptyCopy}>No alarms dismissed yet. Wake up with Anti-Snooze to build your streak!</Text>
+        <Text style={styles.emptyCopy}>{stats.dates.some(Boolean) ? 'Completed challenges build your wake history.' : 'No alarms dismissed yet. Wake up with Anti-Snooze to build your streak!'}</Text>
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>Challenge Efficiency</Text>
-          <View style={styles.fresh}><Ionicons name="flash-outline" size={13} color={colors.ink} /><Text style={styles.freshText}>0s Avg Time</Text></View>
+          <View style={styles.fresh}><Ionicons name="flash-outline" size={13} color={colors.ink} /><Text style={styles.freshText}>{stats.averageSeconds}s Avg Time</Text></View>
         </View>
-        <Challenge icon="calculator-outline" title="Math Puzzle" subtitle="0 equations solved" />
-        <Challenge icon="phone-portrait-outline" title="Shake Phone" subtitle="0 wake-up shakes" />
+        <Challenge icon="calculator-outline" title="Math Puzzle" subtitle={`${stats.math} challenge completions`} />
+        <Challenge icon="phone-portrait-outline" title="Shake Phone" subtitle={`${stats.shake} challenge completions`} />
       </View>
     </AppScreen>
   );

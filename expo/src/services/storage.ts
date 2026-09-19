@@ -14,24 +14,33 @@ export const DEFAULT_PREFERENCES: AppPreferences = { language: 'en', haptics: tr
 export async function loadPreferences() { const raw = await AsyncStorage.getItem(PREFERENCES_KEY); return raw ? { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) } as AppPreferences : DEFAULT_PREFERENCES; }
 export async function savePreferences(preferences: AppPreferences) { await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences)); }
 
-export async function recordChallengeCompletion() {
+export type CompletionRecord = { date: string; challengeType: ChallengeType; durationSeconds: number };
+export async function recordChallengeCompletion(challengeType: ChallengeType = 'math', durationSeconds = 0) {
   const raw = await AsyncStorage.getItem(COMPLETION_DATES_KEY);
-  const dates = raw ? JSON.parse(raw) as string[] : [];
+  const records = raw ? JSON.parse(raw) as (string | CompletionRecord)[] : [];
   const today = new Date().toISOString().slice(0, 10);
-  if (!dates.includes(today)) {
-    dates.push(today);
-    await AsyncStorage.setItem(COMPLETION_DATES_KEY, JSON.stringify(dates.slice(-365)));
-  }
+  const normalized = records.map((record) => typeof record === 'string' ? { date: record, challengeType: 'math' as const, durationSeconds: 0 } : record);
+  if (!normalized.some((record) => record.date === today)) normalized.push({ date: today, challengeType, durationSeconds });
+  await AsyncStorage.setItem(COMPLETION_DATES_KEY, JSON.stringify(normalized.slice(-365)));
+}
+export async function loadCompletionStats() {
+  const raw = await AsyncStorage.getItem(COMPLETION_DATES_KEY);
+  const records = (raw ? JSON.parse(raw) as (string | CompletionRecord)[] : []).map((record) => typeof record === 'string' ? { date: record, challengeType: 'math' as const, durationSeconds: 0 } : record);
+  const today = new Date();
+  const days = Array.from({ length: 7 }, (_, index) => { const date = new Date(today); date.setHours(0, 0, 0, 0); date.setDate(today.getDate() - (6 - index)); return date.toISOString().slice(0, 10); });
+  return { dates: days.map((date) => records.some((record) => record.date === date)), math: records.filter((record) => record.challengeType === 'math').length, shake: records.filter((record) => record.challengeType === 'shake').length, averageSeconds: records.length ? Math.round(records.reduce((sum, record) => sum + record.durationSeconds, 0) / records.length) : 0 };
 }
 
 export async function loadWakeStreak() {
   const raw = await AsyncStorage.getItem(COMPLETION_DATES_KEY);
-  const dates = new Set(raw ? JSON.parse(raw) as string[] : []);
+  const records = raw ? JSON.parse(raw) as (string | CompletionRecord)[] : [];
+  const dates = new Set(records.map((record) => typeof record === 'string' ? record : record.date));
   let streak = 0;
   const cursor = new Date();
-  while (dates.has(cursor.toISOString().slice(0, 10))) {
+  const localDate = () => `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+  while (dates.has(localDate())) {
     streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
+    cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
 }

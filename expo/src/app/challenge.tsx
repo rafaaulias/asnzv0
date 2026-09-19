@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useAudioPlayer } from 'expo-audio';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, radius, spacing, type } from '@/theme';
 import { Alarm, createMathProblem, loadAlarms } from '@/services/storage';
-
-const TYPE_SOUND = require('../../assets/sounds/beep.mp3');
+import { playSoundEffect } from '@/services/sound-effects';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'];
 
@@ -18,7 +16,6 @@ export default function Challenge() {
   const [problemIndex, setProblemIndex] = useState(0);
   const [shakeCount, setShakeCount] = useState(0);
   const [error, setError] = useState(false);
-  const typingSound = useAudioPlayer(TYPE_SOUND);
 
   const isMath = alarm?.challengeType !== 'shake';
   const problem = useMemo(() => createMathProblem(alarm?.mathDifficulty ?? 'easy'), [alarm?.mathDifficulty, problemIndex]);
@@ -67,8 +64,7 @@ export default function Challenge() {
   };
 
   const handleKey = (key: string) => {
-    typingSound.seekTo(0);
-    typingSound.play();
+    void playSoundEffect('keyboard');
     if (key === 'C') setAnswer('');
     else if (key === '⌫') setAnswer((current) => current.slice(0, -1));
     else enterDigit(key);
