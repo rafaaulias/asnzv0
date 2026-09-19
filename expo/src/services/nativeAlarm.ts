@@ -21,13 +21,22 @@ async function getNotifee() {
   return ready;
 }
 
+const WEEKDAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
+
+// Matches Date.getDay(): SUN = 0 ... SAT = 6.
+export function dayToWeekday(day: string) {
+  return WEEKDAY_NAMES.indexOf(day.toUpperCase() as (typeof WEEKDAY_NAMES)[number]);
+}
+
 export async function getAlarmPermissionStatus() {
-  const module = await getNotifee();
-  if (!module) return { granted: false, canAskAgain: false, status: 'undetermined' as const };
-  const settings = await module.getNotificationSettings();
-  const granted = settings.authorizationStatus === 1 || settings.authorizationStatus === 2;
-  const alarmGranted = settings.android?.alarm === 1;
-  return { granted: granted && alarmGranted, canAskAgain: true, status: granted ? 'granted' as const : 'undetermined' as const };
+  if (isExpoGo || Platform.OS !== 'android') return { granted: false, canAskAgain: false, status: 'undetermined' as const };
+  try {
+    const settings = await notifee.getNotificationSettings();
+    const granted = settings.authorizationStatus === 1 || settings.authorizationStatus === 2;
+    return { granted, canAskAgain: true, status: granted ? 'granted' as const : 'undetermined' as const };
+  } catch {
+    return { granted: false, canAskAgain: false, status: 'undetermined' as const };
+  }
 }
 
 export async function requestAlarmPermissions() {
@@ -78,22 +87,26 @@ export async function scheduleNativeAlarm(alarmId: string, hour: number, minute:
   const soundResource = SOUND_RESOURCES[sound] ?? 'radar';
   await Promise.all(weekdays.map(async (weekday) => {
     const trigger: TimestampTrigger = { type: TriggerType.TIMESTAMP, timestamp: nextOccurrence(hour, minute, weekday), alarmManager: { allowWhileIdle: true }, repeatFrequency: RepeatFrequency.WEEKLY };
-    await module.createTriggerNotification({
-      id: `${alarmId}-${weekday}`,
-      title: 'Anti-Snooze alarm',
-      body: 'Complete your challenge to unlock.',
-      data: { alarmId },
-      android: {
-        channelId: CHANNEL_ID,
-        smallIcon: 'ic_launcher',
-        pressAction: { id: 'default', launchActivity: 'default' },
-        fullScreenAction: { id: 'default', launchActivity: 'default' },
-        loopSound: true,
-        sound: soundResource,
-        ongoing: true,
-        vibrationPattern: vibration ? [0, 250, 150, 250] : undefined,
-      },
-    }, trigger);
+    try {
+      await module.createTriggerNotification({
+        id: `${alarmId}-${weekday}`,
+        title: 'Anti-Snooze alarm',
+        body: 'Complete your challenge to unlock.',
+        data: { alarmId },
+        android: {
+          channelId: CHANNEL_ID,
+          smallIcon: 'ic_launcher',
+          pressAction: { id: 'default', launchActivity: 'default' },
+          fullScreenAction: { id: 'default', launchActivity: 'default' },
+          loopSound: true,
+          sound: soundResource,
+          ongoing: true,
+          vibrationPattern: vibration ? [0, 250, 150, 250] : undefined,
+        },
+      }, trigger);
+    } catch (error) {
+      console.log('[v0] Failed to schedule alarm trigger', alarmId, weekday, error);
+    }
   }));
   return alarmId;
 }
