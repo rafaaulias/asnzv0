@@ -47,3 +47,16 @@ export async function cancelNativeAlarm(id: string) {
   await Promise.all(scheduled.filter((item) => String(item.identifier).startsWith(`${id}-`)).map((item) => notifications.cancelScheduledNotificationAsync(item.identifier)));
   await notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
 }
+
+export function addAlarmResponseHandler(onAlarm: (alarmId?: string) => void) {
+  let subscription: { remove: () => void } | null = null;
+  import('expo-notifications')
+    .then((module) => {
+      subscription = module.addNotificationResponseReceivedListener((response) => {
+        const alarmId = response.notification.request.content.data?.alarmId;
+        onAlarm(typeof alarmId === 'string' ? alarmId : undefined);
+      });
+    })
+    .catch(() => undefined);
+  return { remove: () => subscription?.remove() };
+}

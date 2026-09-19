@@ -111,7 +111,7 @@ export default function AlarmForm() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={[styles.header, { paddingHorizontal: margin, paddingTop: 8 }]}>
+      <View style={[styles.header, { paddingHorizontal: margin, paddingTop: 28 }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} style={styles.roundButton}>
           <Ionicons name="close" size={20} color={colors.ink} />
         </Pressable>

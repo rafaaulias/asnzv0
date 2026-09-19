@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, radius, spacing, type } from '@/theme';
@@ -25,6 +25,11 @@ export default function Challenge() {
   useEffect(() => {
     loadAlarms().then((items) => setAlarm(items.find((item) => item.id === alarmId) ?? items[0]));
   }, [alarmId]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (alarm?.challengeType !== 'shake') return;

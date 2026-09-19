@@ -12,6 +12,13 @@ export default function RootLayout() {
   const router = useRouter();
   const pathname = usePathname();
   useEffect(() => { hasSeenPermissions().then((seen) => { if (!seen && pathname !== '/permissions') router.replace('/permissions'); }); }, [pathname, router]);
+  useEffect(() => {
+    let subscription: { remove: () => void } | null = null;
+    import('@/services/nativeAlarm').then(({ addAlarmResponseHandler }) => {
+      subscription = addAlarmResponseHandler((alarmId) => router.push({ pathname: '/active-alarm', params: alarmId ? { alarmId } : {} }));
+    });
+    return () => subscription?.remove();
+  }, [router]);
   if (!loaded) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.paper }}><ActivityIndicator color={colors.ink} /></View>;
   return (
     <SafeAreaProvider>
