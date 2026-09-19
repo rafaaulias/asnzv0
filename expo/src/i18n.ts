@@ -130,6 +130,7 @@ const en = {
   unrestrictedBatteryDesc: 'Prevents Android from stopping scheduled alarm work in the background.',
   grantAccess: 'Grant access',
   continue: 'Continue',
+  skipForNow: 'Skip for now',
   step: 'STEP',
   of: 'OF',
 };
@@ -255,6 +256,7 @@ const id: Record<TranslationKey, string> = {
   unrestrictedBatteryDesc: 'Mencegah Android menghentikan kerja alarm terjadwal di latar belakang.',
   grantAccess: 'Beri akses',
   continue: 'Lanjut',
+  skipForNow: 'Lewati dulu',
   step: 'LANGKAH',
   of: 'DARI',
 };

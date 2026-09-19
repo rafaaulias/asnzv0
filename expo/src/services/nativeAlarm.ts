@@ -1,5 +1,6 @@
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
+import IntentLauncher from 'expo-intent-launcher';
 import notifee, { AndroidImportance, EventType, RepeatFrequency, TriggerType, type TimestampTrigger } from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -30,11 +31,33 @@ export async function getAlarmPermissionStatus() {
 }
 
 export async function requestAlarmPermissions() {
-  const module = await getNotifee();
-  if (!module) return false;
-  const settings = await module.requestPermission();
-  const notificationGranted = settings.authorizationStatus === 1 || settings.authorizationStatus === 2;
-  return notificationGranted && settings.android?.alarm === 1;
+  try {
+    const module = await getNotifee();
+    if (!module) return false;
+    const settings = await module.requestPermission();
+    const notificationGranted = settings.authorizationStatus === 1 || settings.authorizationStatus === 2;
+    return notificationGranted && settings.android?.alarm === 1;
+  } catch {
+    return false;
+  }
+}
+
+export async function openExactAlarmSettings() {
+  try {
+    const module = await getNotifee();
+    if (!module) throw new Error('notifee unavailable');
+    await module.openAlarmPermissionSettings();
+  } catch {
+    await Linking.openSettings().catch(() => undefined);
+  }
+}
+
+export async function openBatterySettings() {
+  try {
+    await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+  } catch {
+    await Linking.openSettings().catch(() => undefined);
+  }
 }
 
 function nextOccurrence(hour: number, minute: number, weekday: number) {
