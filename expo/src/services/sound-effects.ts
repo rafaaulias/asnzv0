@@ -4,7 +4,7 @@ import { loadPreferences } from '@/services/storage';
 const SOURCES = {
   keyboard: require('../../assets/sounds/keyboard.mp3'),
   click: require('../../assets/sounds/click.mp3'),
-  switch: require('../../assets/sounds/switch.mp3'),
+  switch: require('../../assets/sounds/toggle.mp3'),
 };
 
 export async function playSoundEffect(name: keyof typeof SOURCES) {
