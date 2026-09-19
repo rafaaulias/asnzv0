@@ -5,10 +5,11 @@ import { useFocusEffect } from 'expo-router';
 import { AppScreen } from '@/components/app-screen';
 import { colors, fonts, radius, spacing, type } from '@/theme';
 import { loadCompletionStats, loadWakeStreak } from '@/services/storage';
-
-const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+import { useTranslation } from '@/i18n';
 
 export default function Stats() {
+  const { t, weekLabels } = useTranslation();
+  const days = weekLabels;
   const [streak, setStreak] = useState(0);
   const [stats, setStats] = useState({ dates: [false, false, false, false, false, false, false], math: 0, shake: 0, averageSeconds: 0 });
   useFocusEffect(useCallback(() => {
@@ -20,13 +21,13 @@ export default function Stats() {
     <AppScreen>
       <View style={styles.streakCard}>
         <Ionicons name="flame" size={58} color={streak > 0 ? '#ff7b00' : colors.muted} />
-        <Text style={[styles.streakLabel, streak > 0 && styles.streakActive]}>Wake Streak</Text>
-        <Text style={[styles.streakValue, streak > 0 && styles.streakActive]}>{streak} {streak === 1 ? 'Day' : 'Days'}</Text>
+        <Text style={[styles.streakLabel, streak > 0 && styles.streakActive]}>{t('wakeStreak')}</Text>
+        <Text style={[styles.streakValue, streak > 0 && styles.streakActive]}>{streak} {streak === 1 ? t('day') : t('days')}</Text>
       </View>
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Last 7 Days</Text>
-          <View style={styles.fresh}><Ionicons name="checkmark-circle-outline" size={13} color={colors.ink} /><Text style={styles.freshText}>Fresh Start</Text></View>
+          <Text style={styles.cardTitle}>{t('last7Days')}</Text>
+          <View style={styles.fresh}><Ionicons name="checkmark-circle-outline" size={13} color={colors.ink} /><Text style={styles.freshText}>{t('freshStart')}</Text></View>
         </View>
         <View style={styles.chart}>
           <View style={styles.gridLine} />
@@ -35,23 +36,24 @@ export default function Stats() {
             {days.map((day, index) => <View key={day} style={styles.barColumn}><View style={[styles.bar, stats.dates[index] && styles.barActive]} /><Text style={[styles.dayLabel, stats.dates[index] && styles.dayLabelActive]}>{day}</Text></View>)}
           </View>
         </View>
-        <Text style={styles.emptyCopy}>{stats.dates.some(Boolean) ? 'Completed challenges build your wake history.' : 'No alarms dismissed yet. Wake up with Anti-Snooze to build your streak!'}</Text>
+        <Text style={styles.emptyCopy}>{stats.dates.some(Boolean) ? t('wakeHistoryFilled') : t('noAlarmsYet')}</Text>
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Challenge Efficiency</Text>
-          <View style={styles.fresh}><Ionicons name="flash-outline" size={13} color={colors.ink} /><Text style={styles.freshText}>{stats.averageSeconds}s Avg Time</Text></View>
+          <Text style={styles.cardTitle}>{t('challengeEfficiency')}</Text>
+          <View style={styles.fresh}><Ionicons name="flash-outline" size={13} color={colors.ink} /><Text style={styles.freshText}>{stats.averageSeconds}s {t('avgTime')}</Text></View>
         </View>
-        <Challenge icon="calculator-outline" title="Math Puzzle" subtitle={`${stats.math} challenge completions`} />
-        <Challenge icon="phone-portrait-outline" title="Shake Phone" subtitle={`${stats.shake} challenge completions`} />
+        <Challenge icon="calculator-outline" title={t('mathPuzzleTitle')} subtitle={`${stats.math} ${t('challengeCompletions')}`} />
+        <Challenge icon="phone-portrait-outline" title={t('shakePhoneTitle')} subtitle={`${stats.shake} ${t('challengeCompletions')}`} />
       </View>
     </AppScreen>
   );
 }
 
 function Challenge({ icon, title, subtitle }: { icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string }) {
-  return <View style={styles.challenge}><View style={styles.challengeIcon}><Ionicons name={icon} size={18} color={colors.paper} /></View><View style={styles.challengeCopy}><Text style={styles.challengeTitle}>{title}</Text><Text style={styles.challengeSubtitle}>{subtitle}</Text></View><View style={styles.rate}><Text style={styles.rateValue}>0%</Text><Text style={styles.rateLabel}>Success Rate</Text></View></View>;
+  const { t } = useTranslation();
+  return <View style={styles.challenge}><View style={styles.challengeIcon}><Ionicons name={icon} size={18} color={colors.paper} /></View><View style={styles.challengeCopy}><Text style={styles.challengeTitle}>{title}</Text><Text style={styles.challengeSubtitle}>{subtitle}</Text></View><View style={styles.rate}><Text style={styles.rateValue}>0%</Text><Text style={styles.rateLabel}>{t('successRate')}</Text></View></View>;
 }
 
 const styles = StyleSheet.create({

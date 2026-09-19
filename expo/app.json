@@ -27,13 +27,15 @@
       "expo-router",
       "expo-audio",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      "./plugins/with-alarm-activity.js"
     ],
     "android": {
       "package": "com.antisnooze.alarm",
       "permissions": [
         "SCHEDULE_EXACT_ALARM",
         "USE_EXACT_ALARM",
+        "USE_FULL_SCREEN_INTENT",
         "WAKE_LOCK",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",

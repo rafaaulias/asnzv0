@@ -8,6 +8,7 @@ import { colors, fonts, radius, shadow, spacing, type } from '@/theme';
 import { Alarm, loadAlarms, saveAlarms } from '@/services/storage';
 import { Haptics } from '@/services/feedback';
 import { cancelNativeAlarm, requestAlarmPermissions, scheduleNativeAlarm } from '@/services/nativeAlarm';
+import { DAY_KEYS, useTranslation } from '@/i18n';
 
 function formatTime(time24: string) {
   const [hourRaw, minute] = time24.split(':');
@@ -38,11 +39,12 @@ function formatCountdown(totalMinutes: number) {
   return `${hours}h ${minutes}m`;
 }
 
-function challengeSummary(alarm: Alarm) {
-  return alarm.challengeType === 'math' ? `Math puzzle · ${alarm.mathDifficulty}` : `Shake to wake · ${alarm.shakeCountTarget}x`;
+function challengeSummary(alarm: Alarm, mathLabel: string, shakeLabel: string) {
+  return alarm.challengeType === 'math' ? `${mathLabel} · ${alarm.mathDifficulty}` : `${shakeLabel} · ${alarm.shakeCountTarget}x`;
 }
 
 function AlarmCard({ alarm, onToggle, onPress, onTest }: { alarm: Alarm; onToggle: (value: boolean) => void; onPress: () => void; onTest: () => void }) {
+  const { t, dayLabels } = useTranslation();
   const { hour, minute, period } = formatTime(alarm.time);
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, !alarm.enabled && styles.cardInactive, pressed && { opacity: 0.85 }]}>
@@ -53,7 +55,7 @@ function AlarmCard({ alarm, onToggle, onPress, onTest }: { alarm: Alarm; onToggl
             <Text style={styles.period}>{period}</Text>
           </View>
           <Text style={styles.label}>
-            {alarm.label} · {challengeSummary(alarm)}
+            {alarm.label} · {challengeSummary(alarm, t('mathPuzzle'), t('shakeToWake'))}
           </Text>
         </View>
         <Switch value={alarm.enabled} onValueChange={onToggle} trackColor={{ false: colors.disabled, true: colors.ink }} thumbColor={colors.paper} />
@@ -63,13 +65,13 @@ function AlarmCard({ alarm, onToggle, onPress, onTest }: { alarm: Alarm; onToggl
         <View style={styles.days}>
           {alarm.days.map((day, index) => (
             <View key={`${day}-${index}`} style={[styles.day, alarm.enabled && styles.dayActive]}>
-              <Text style={[styles.dayText, alarm.enabled && styles.dayTextActive]}>{day}</Text>
+              <Text style={[styles.dayText, alarm.enabled && styles.dayTextActive]}>{dayLabels[DAY_KEYS.indexOf(day as (typeof DAY_KEYS)[number])] ?? day}</Text>
             </View>
           ))}
         </View>
         <Pressable onPress={onTest} hitSlop={8} style={styles.testButton} accessibilityRole="button" accessibilityLabel={`Test ${alarm.label} alarm`}>
           <Ionicons name="play" size={10} color={alarm.enabled ? colors.label : colors.faintText} />
-          <Text style={[styles.test, !alarm.enabled && styles.inactiveText]}>Test</Text>
+          <Text style={[styles.test, !alarm.enabled && styles.inactiveText]}>{t('test')}</Text>
         </Pressable>
       </View>
     </Pressable>
@@ -79,6 +81,7 @@ function AlarmCard({ alarm, onToggle, onPress, onTest }: { alarm: Alarm; onToggl
 export default function AlarmsScreen() {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const router = useRouter();
+  const { t } = useTranslation();
 
   useFocusEffect(
     useCallback(() => {
@@ -116,11 +119,11 @@ export default function AlarmsScreen() {
   return (
     <AppScreen onAddPress={() => router.push('/alarm-form' as never)}>
       <View style={styles.sectionHeader}>
-        <Text style={type.subhead}>Active</Text>
-        {nextIn ? <Text style={type.subhead}>Next: {nextIn}</Text> : null}
+        <Text style={type.subhead}>{t('active')}</Text>
+        {nextIn ? <Text style={type.subhead}>{t('next')}: {nextIn}</Text> : null}
       </View>
       {active.length === 0 ? (
-        <Text style={styles.empty}>No active alarms. Tap + above to create or toggle an alarm on.</Text>
+        <Text style={styles.empty}>{t('noActiveAlarms')}</Text>
       ) : (
         active.map((alarm) => (
           <AlarmCard
@@ -136,7 +139,7 @@ export default function AlarmsScreen() {
       {inactive.length > 0 ? (
         <>
           <View style={styles.sectionHeader}>
-            <Text style={type.subhead}>Inactive</Text>
+            <Text style={type.subhead}>{t('inactive')}</Text>
           </View>
           {inactive.map((alarm) => (
             <AlarmCard

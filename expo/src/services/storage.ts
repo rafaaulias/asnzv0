@@ -9,8 +9,9 @@ const PREFERENCES_KEY = 'anti_snooze_preferences_v1';
 const PERMISSIONS_SEEN_KEY = 'anti_snooze_permissions_seen_v1';
 export async function hasSeenPermissions() { return (await AsyncStorage.getItem(PERMISSIONS_SEEN_KEY)) === 'true'; }
 export async function markPermissionsSeen() { await AsyncStorage.setItem(PERMISSIONS_SEEN_KEY, 'true'); }
-export type AppPreferences = { language: 'en' | 'id'; haptics: boolean; soundEffects: boolean; keepAwake: boolean };
-export const DEFAULT_PREFERENCES: AppPreferences = { language: 'en', haptics: true, soundEffects: true, keepAwake: false };
+export type RingtoneChoice = 'radar' | 'siren' | 'clock' | 'custom';
+export type AppPreferences = { language: 'en' | 'id'; haptics: boolean; soundEffects: boolean; keepAwake: boolean; ringtone: RingtoneChoice; customRingtoneName?: string; customRingtoneUri?: string };
+export const DEFAULT_PREFERENCES: AppPreferences = { language: 'en', haptics: true, soundEffects: true, keepAwake: false, ringtone: 'radar' };
 export async function loadPreferences() { const raw = await AsyncStorage.getItem(PREFERENCES_KEY); return raw ? { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) } as AppPreferences : DEFAULT_PREFERENCES; }
 export async function savePreferences(preferences: AppPreferences) { await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences)); }
 
