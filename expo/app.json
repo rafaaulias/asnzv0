@@ -6,7 +6,8 @@
     "version": "1.0.0",
     "updates": {
       "checkAutomatically": "ON_ERROR_RECOVERY",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/6cfdd03f-96d0-46aa-8abc-767cb46bb1be"
     },
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -45,6 +46,19 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM",
+        "USE_FULL_SCREEN_INTENT",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
@@ -53,6 +67,8 @@
       "infoPlist": {
         "NSMotionUsageDescription": "Anti-Snooze uses motion to verify shake challenges.",
         "UIBackgroundModes": [
+          "audio",
+          "fetch",
           "audio",
           "fetch"
         ]
@@ -66,6 +82,7 @@
       "eas": {
         "projectId": "6cfdd03f-96d0-46aa-8abc-767cb46bb1be"
       }
-    }
+    },
+    "runtimeVersion": "1.0.0"
   }
 }
