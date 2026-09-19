@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -80,8 +80,14 @@ function AlarmCard({ alarm, onToggle, onPress, onTest }: { alarm: Alarm; onToggl
 
 export default function AlarmsScreen() {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const [tick, setTick] = useState(0);
   const router = useRouter();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick((value) => value + 1), 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -115,6 +121,7 @@ export default function AlarmsScreen() {
   const inactive = alarms.filter((alarm) => !alarm.enabled);
   const nextMinutes = active.length ? Math.min(...active.map((alarm) => minutesUntil(alarm.time, alarm.days))) : null;
   const nextIn = nextMinutes !== null && Number.isFinite(nextMinutes) ? formatCountdown(nextMinutes) : null;
+  void tick;
 
   return (
     <AppScreen onAddPress={() => router.push('/alarm-form' as never)}>
