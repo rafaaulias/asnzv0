@@ -32,8 +32,11 @@ export async function requestAlarmPermissions() {
 export async function scheduleNativeAlarm(alarmId: string, hour: number, minute: number, weekdays: number[], sound: 'default' | 'soft' | 'bright' = 'default', vibration = true) {
   const notifications = await getNotifications();
   if (!notifications) return null;
-  await notifications.cancelScheduledNotificationAsync(alarmId).catch(() => undefined);
-  return notifications.scheduleNotificationAsync({ identifier: alarmId, content: { title: 'Anti-Snooze alarm', body: 'Complete your challenge to unlock.', sound: sound === 'default' ? 'radar.mp3' : sound === 'soft' ? 'bell.mp3' : 'beep.mp3', vibrate: vibration ? [0, 250, 150, 250] : undefined, data: { alarmId, fullScreenIntent: true, sound } }, trigger: { type: notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: weekdays[0] ?? 2, hour, minute } });
+  if (weekdays.length === 0) return null;
+  await cancelNativeAlarm(alarmId);
+  const soundFile = sound === 'default' ? 'radar.mp3' : sound === 'soft' ? 'bell.mp3' : 'beep.mp3';
+  await Promise.all(weekdays.map((weekday) => notifications.scheduleNotificationAsync({ identifier: `${alarmId}-${weekday}`, content: { title: 'Anti-Snooze alarm', body: 'Complete your challenge to unlock.', sound: soundFile, vibrate: vibration ? [0, 250, 150, 250] : undefined, data: { alarmId, fullScreenIntent: true, sound } }, trigger: { type: notifications.SchedulableTriggerInputTypes.WEEKLY, weekday, hour, minute } })));
+  return alarmId;
 }
 
 export async function cancelNativeAlarm(id: string) {

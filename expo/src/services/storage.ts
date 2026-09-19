@@ -2,12 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ChallengeType = 'math' | 'shake';
 export type Alarm = { id: string; time: string; label: string; enabled: boolean; challengeType: ChallengeType; days: string[]; mathDifficulty: 'easy' | 'medium' | 'hard'; mathProblemCount: number; shakeCountTarget: number; volume: number; sound: 'default' | 'soft' | 'bright'; vibration: boolean };
-export const DEFAULT_ALARMS: Alarm[] = [{ id: 'alarm-1', time: '06:30', label: 'Morning Alarm', enabled: true, challengeType: 'math', days: ['M','T','W','T','F'], mathDifficulty: 'easy', mathProblemCount: 2, shakeCountTarget: 30, volume: 80, sound: 'default', vibration: true }];
+export const DEFAULT_ALARMS: Alarm[] = [{ id: 'alarm-1', time: '06:30', label: 'Morning Alarm', enabled: true, challengeType: 'math', days: ['MON','TUE','WED','THU','FRI'], mathDifficulty: 'easy', mathProblemCount: 2, shakeCountTarget: 30, volume: 80, sound: 'default', vibration: true }];
 const ALARMS_KEY = 'anti_snooze_alarms_v1';
 const COMPLETION_DATES_KEY = 'anti_snooze_completion_dates_v1';
 const PREFERENCES_KEY = 'anti_snooze_preferences_v1';
-export type AppPreferences = { language: 'en' | 'id'; haptics: boolean; keepAwake: boolean };
-export const DEFAULT_PREFERENCES: AppPreferences = { language: 'en', haptics: true, keepAwake: false };
+const PERMISSIONS_SEEN_KEY = 'anti_snooze_permissions_seen_v1';
+export async function hasSeenPermissions() { return (await AsyncStorage.getItem(PERMISSIONS_SEEN_KEY)) === 'true'; }
+export async function markPermissionsSeen() { await AsyncStorage.setItem(PERMISSIONS_SEEN_KEY, 'true'); }
+export type AppPreferences = { language: 'en' | 'id'; haptics: boolean; soundEffects: boolean; keepAwake: boolean };
+export const DEFAULT_PREFERENCES: AppPreferences = { language: 'en', haptics: true, soundEffects: true, keepAwake: false };
 export async function loadPreferences() { const raw = await AsyncStorage.getItem(PREFERENCES_KEY); return raw ? { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) } as AppPreferences : DEFAULT_PREFERENCES; }
 export async function savePreferences(preferences: AppPreferences) { await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences)); }
 

@@ -23,6 +23,7 @@ export default function Settings() {
     <Text style={styles.sectionTitle}>App Preferences</Text><View style={styles.card}>
       <Row label="Language" value={preferences.language === 'en' ? 'English' : 'Indonesia'} onPress={() => update({ ...preferences, language: preferences.language === 'en' ? 'id' : 'en' })} />
       <Row label="Keep screen awake" toggle enabled={preferences.keepAwake} onToggle={(keepAwake) => update({ ...preferences, keepAwake })} />
+      <Row label="Sound effects" toggle enabled={preferences.soundEffects} onToggle={(soundEffects) => update({ ...preferences, soundEffects })} />
       <Row label="Haptics" toggle enabled={preferences.haptics} onToggle={(haptics) => update({ ...preferences, haptics })} />
     </View>
     <Text style={styles.sectionTitle}>About Anti-Snooze</Text><View style={styles.card}><Row label="Storage" value="On device" /><Row label="Privacy" value="No account required" /></View><Text style={styles.foot}>Alarm scheduling and challenge data stay on your device.</Text></AppScreen>;

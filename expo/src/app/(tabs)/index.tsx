@@ -17,13 +17,19 @@ function formatTime(time24: string) {
   return { hour: String(hour12).padStart(2, '0'), minute, period };
 }
 
-function minutesUntil(time24: string) {
+function minutesUntil(time24: string, days: string[]) {
   const [hour, minute] = time24.split(':').map(Number);
   const now = new Date();
-  const target = new Date(now);
-  target.setHours(hour, minute, 0, 0);
-  if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 1);
-  return Math.round((target.getTime() - now.getTime()) / 60000);
+  const selected = new Set(days);
+  let best = Number.POSITIVE_INFINITY;
+  for (let offset = 0; offset < 7; offset += 1) {
+    const target = new Date(now);
+    target.setDate(now.getDate() + offset);
+    target.setHours(hour, minute, 0, 0);
+    const weekday = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][target.getDay()];
+    if (selected.has(weekday) && target.getTime() > now.getTime()) best = Math.min(best, Math.round((target.getTime() - now.getTime()) / 60000));
+  }
+  return best;
 }
 
 function formatCountdown(totalMinutes: number) {
@@ -77,9 +83,11 @@ export default function AlarmsScreen() {
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
-      loadAlarms().then((items) => {
-        const sorted = [...items].sort((a, b) => minutesUntil(a.time) - minutesUntil(b.time));
+      loadAlarms().then(async (items) => {
+        const sorted = [...items].sort((a, b) => minutesUntil(a.time, a.days) - minutesUntil(b.time, b.days));
         if (mounted) setAlarms(sorted);
+        const granted = await requestAlarmPermissions();
+        if (granted) await Promise.all(sorted.filter((alarm) => alarm.enabled).map((alarm) => { const [hour, minute] = alarm.time.split(':').map(Number); return scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map((day) => ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].indexOf(day) + 1).filter((day) => day > 0), alarm.sound, alarm.vibration); }));
       });
       return () => {
         mounted = false;
@@ -95,14 +103,15 @@ export default function AlarmsScreen() {
   saveAlarms(next);
   if (alarm) {
     const [hour, minute] = alarm.time.split(':').map(Number);
-    if (enabled) requestAlarmPermissions().then((granted) => { if (granted) void scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map((day) => ['S', 'M', 'T', 'W', 'T', 'F', 'S'].indexOf(day) + 1), alarm.sound, alarm.vibration); });
+    if (enabled) requestAlarmPermissions().then((granted) => { if (granted) void scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map((day) => ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].indexOf(day) + 1).filter((day) => day > 0), alarm.sound, alarm.vibration); });
     else cancelNativeAlarm(alarm.id).catch(() => undefined);
   }
   };
 
   const active = alarms.filter((alarm) => alarm.enabled);
   const inactive = alarms.filter((alarm) => !alarm.enabled);
-  const nextIn = active.length ? formatCountdown(Math.min(...active.map((alarm) => minutesUntil(alarm.time)))) : null;
+  const nextMinutes = active.length ? Math.min(...active.map((alarm) => minutesUntil(alarm.time, alarm.days))) : null;
+  const nextIn = nextMinutes !== null && Number.isFinite(nextMinutes) ? formatCountdown(nextMinutes) : null;
 
   return (
     <AppScreen onAddPress={() => router.push('/alarm-form' as never)}>

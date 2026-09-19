@@ -7,9 +7,11 @@ import { TimeWheel } from '@/components/time-wheel';
 import { usePageMargin } from '@/hooks/use-page-margin';
 import { Alarm, ChallengeType, loadAlarms, saveAlarms } from '@/services/storage';
 import { colors, fonts, radius, spacing, type } from '@/theme';
+import { requestAlarmPermissions, scheduleNativeAlarm } from '@/services/nativeAlarm';
 
 const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+const DAY_KEYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DEFAULT_DAYS = [false, true, true, true, true, true, false];
 
@@ -52,7 +54,7 @@ export default function AlarmForm() {
       setVolume(alarm.volume ?? 80);
       setSound(alarm.sound ?? 'default');
       setVibration(alarm.vibration ?? true);
-      setDays(DAY_LETTERS.map((day) => alarm.days.includes(day)));
+      setDays(DAY_KEYS.map((day, index) => alarm.days.includes(day) || alarm.days.includes(DAY_LETTERS[index])));
     });
   }, [alarmId]);
 
@@ -76,6 +78,10 @@ export default function AlarmForm() {
   };
 
   const save = async () => {
+    if (!days.some(Boolean)) {
+      Alert.alert('Choose a day', 'Select at least one repeat day before saving this alarm.');
+      return;
+    }
     const hourNumber = Number(hour) % 12;
     const hour24 = period === 'AM' ? hourNumber : hourNumber + 12;
     const selectedDays = DAY_LETTERS.filter((_, i) => days[i]);
@@ -85,7 +91,7 @@ export default function AlarmForm() {
       label: label.trim() || 'Wake Up',
       enabled: true,
       challengeType,
-      days: selectedDays,
+      days: DAY_KEYS.filter((_, index) => days[index]),
       mathDifficulty,
       mathProblemCount: 2,
       shakeCountTarget,
@@ -96,6 +102,10 @@ export default function AlarmForm() {
     const current = await loadAlarms();
     const next = isEditing ? current.map((alarm) => (alarm.id === newAlarm.id ? { ...alarm, ...newAlarm } : alarm)) : [...current, newAlarm];
     await saveAlarms(next);
+    if (newAlarm.enabled) {
+      const granted = await requestAlarmPermissions();
+      if (granted) await scheduleNativeAlarm(newAlarm.id, hour24, Number(minute), DAY_KEYS.map((day, index) => days[index] ? index + 1 : 0).filter(Boolean), sound, vibration);
+    }
     router.back();
   };
 
