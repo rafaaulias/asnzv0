@@ -46,3 +46,15 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
 - Fix: `loadAlarms()` kini menormalisasi semua format (EN 3-huruf, label Indonesia MIN/SEN/..., single-letter 7-elemen dipetakan posisional) ke format kanonik saat load — satu titik, mencakup scheduling, tampilan, dan watcher.
 - Pengaman: `scheduleNativeAlarm` kini mencatat error terlihat di Settings jika alarm aktif punya 0 hari valid — bug kelas ini tidak bisa diam-diam lagi.
 - Ekspektasi: setelah update, buka app (focus → sync) → "Scheduled alarms" ≥ 1 → alarm asli bunyi di background seperti tes.
+
+## Iterasi 6: work sekali lalu tidak pernah lagi — alarm one-shot tanpa repeat/boot restore
+- Laporan user: setelah fix hari, alarm bunyi sekali (bahkan layar mati), lalu tidak pernah lagi — termasuk app di background, dan resync tidak menolong.
+- Akar: `setAlarmClock` itu one-shot. Tidak ada mekanisme repeat mingguan, tidak ada BootReceiver (reboot menghapus semua alarm), dan `pendingCount` menghitung PendingIntent basi sehingga diagnostik menyesatkan.
+- Fix native:
+  - `AlarmScheduler` (baru): state terpusat di SharedPreferences — daftar trigger (id → timestamp) + flag enabled per alarm id.
+  - `AlarmReceiver`: setelah memicu, mendaftarkan ulang slot yang sama +7 hari (kecuali alarm sudah dimatikan/dihapus — flag enabled dicek).
+  - `BootReceiver` (baru): setelah reboot, memulihkan semua trigger dari state tersimpan (timestamp lewat → +7 hari).
+  - `cancel(alarmId)` native kini satu panggilan yang membatalkan semua slot hari + membersihkan state.
+  - Diagnostik jujur: trigger yang sudah terpicu dihapus dari state; `nextTriggerTime()` baru menampilkan "Alarm berikutnya" di Settings.
+- Fix JS: `schedule(triggerId, weekday, ts)`; `consumeLastNativeAlarm` tidak lagi split '-' (UUID mengandung dash — bug tersembunyi yang membuat active-alarm salah match); lead 2 menit diturunkan ke 10 detik agar sync menjelang waktu alarm tidak mendorong trigger seminggu.
+- Ekspektasi: alarm harian kini bunyi setiap hari tanpa membuka app; bertahan reboot; Settings menampilkan tanggal+jam alarm berikutnya yang harusnya cocok dengan alarm terdekat.

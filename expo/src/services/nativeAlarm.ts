@@ -26,10 +26,11 @@ export function dayToWeekday(day: string) {
 }
 
 type AlarmNativeModule = {
-  schedule(id: string, timestampMillis: number): boolean;
+  schedule(triggerId: string, weekday: number, timestampMillis: number): boolean;
   testIn30Seconds(): boolean;
-  cancel(id: string): void;
+  cancel(alarmId: string): void;
   pendingCount(): number;
+  nextTriggerTime(): number;
   stop(): void;
   takeLastAlarm(): string;
 };
@@ -50,17 +51,21 @@ export type AlarmDiagnostics = {
   exactAlarm: boolean;
   batteryOptimized: boolean;
   scheduledCount: number;
+  nextTriggerAt: number | null;
   lastError: string | null;
 };
 
 export async function getAlarmDiagnostics(): Promise<AlarmDiagnostics> {
-  if (isExpoGo || Platform.OS !== 'android') return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: 0, lastError: 'Expo Go unsupported' };
-  // The native count reads AlarmManager directly, so it stays truthful across
-  // app restarts — the in-memory set only covers this session.
+  if (isExpoGo || Platform.OS !== 'android') return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: 0, nextTriggerAt: null, lastError: 'Expo Go unsupported' };
+  // The native count reads the scheduler's persisted state, so it stays
+  // truthful across app restarts — the in-memory set only covers this session.
   let nativeCount: number | null = null;
+  let nextTriggerAt: number | null = null;
   try {
     const count = AlarmNative?.pendingCount();
     if (typeof count === 'number' && count >= 0) nativeCount = count;
+    const next = AlarmNative?.nextTriggerTime();
+    if (typeof next === 'number' && next > 0) nextTriggerAt = next;
   } catch {
     // Module unavailable; fall back to the session set below.
   }
@@ -70,9 +75,9 @@ export async function getAlarmDiagnostics(): Promise<AlarmDiagnostics> {
     const notifications = settings.authorizationStatus === 1 || settings.authorizationStatus === 2;
     const exactAlarm = settings.android?.alarm === 1;
     const batteryOptimized = !(await notifee.isBatteryOptimizationEnabled().catch(() => true));
-    return { notifications, exactAlarm, batteryOptimized, scheduledCount, lastError: scheduledCount === 0 ? lastScheduleError : null };
+    return { notifications, exactAlarm, batteryOptimized, scheduledCount, nextTriggerAt, lastError: scheduledCount === 0 ? lastScheduleError : null };
   } catch (error) {
-    return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount, lastError: toMessage(error) };
+    return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount, nextTriggerAt, lastError: toMessage(error) };
   }
 }
 
@@ -140,9 +145,10 @@ function nextOccurrence(hour: number, minute: number, weekday: number) {
   target.setHours(hour, minute, 0, 0);
   if (delta === 0 && target.getTime() <= now.getTime()) delta = 7;
   target.setDate(now.getDate() + delta);
-  // AlarmManager tolerates near-future times, but a two-minute lead keeps the
-  // first occurrence predictable when saving during the current minute.
-  if (target.getTime() - now.getTime() < 120_000) target.setDate(target.getDate() + 7);
+  // AlarmManager tolerates near-future times; a tiny guard only prevents
+  // registering a trigger for a timestamp that is already in the past by the
+  // time it reaches the native layer.
+  if (target.getTime() - now.getTime() < 10_000) target.setDate(target.getDate() + 7);
   return Math.floor(target.getTime() / 1000) * 1000;
 }
 
@@ -160,16 +166,17 @@ export async function scheduleNativeAlarm(alarmId: string, hour: number, minute:
   await cancelNativeAlarm(alarmId);
   let scheduled = 0;
   for (const weekday of weekdays) {
-    const id = `${alarmId}-${weekday}`;
+    const triggerId = `${alarmId}-${weekday}`;
+    const timestamp = nextOccurrence(hour, minute, weekday);
     try {
-      AlarmNative.schedule(id, nextOccurrence(hour, minute, weekday));
-      scheduledIds.add(id);
+      AlarmNative.schedule(triggerId, weekday, timestamp);
+      scheduledIds.add(triggerId);
       scheduled += 1;
       lastScheduleError = null;
     } catch (error) {
-      scheduledIds.delete(id);
+      scheduledIds.delete(triggerId);
       lastScheduleError = toMessage(error);
-      console.log('[v0] Failed to schedule native alarm', id, error);
+      console.log('[v0] Failed to schedule native alarm', triggerId, error);
     }
   }
   console.log('[v0] Scheduled', scheduled, 'native alarm(s) for', alarmId);
@@ -178,15 +185,13 @@ export async function scheduleNativeAlarm(alarmId: string, hour: number, minute:
 
 export async function cancelNativeAlarm(id: string) {
   if (AlarmNative) {
-    for (let weekday = 0; weekday < 7; weekday += 1) {
-      const triggerId = `${id}-${weekday}`;
-      try {
-        AlarmNative.cancel(triggerId);
-      } catch {
-        // Nothing scheduled under this id; safe to ignore.
-      }
-      scheduledIds.delete(triggerId);
+    // The native side cancels every weekday slot for this alarm id in one call.
+    try {
+      AlarmNative.cancel(id);
+    } catch {
+      // Nothing scheduled under this id; safe to ignore.
     }
+    for (let weekday = 0; weekday < 7; weekday += 1) scheduledIds.delete(`${id}-${weekday}`);
   }
   // Cleanup for triggers created by previous app versions via notifee.
   const triggers = await notifee.getTriggerNotificationIds().catch(() => [] as string[]);
@@ -220,10 +225,12 @@ export function stopNativeAlarm() {
 
 // Returns the alarm id fired by the native receiver since the last call, or
 // undefined. Covers cold and warm launches where no PRESS event is delivered.
+// The receiver already strips the weekday suffix, so the id is used as-is
+// (splitting on '-' would corrupt UUID alarm ids).
 export function consumeLastNativeAlarm() {
   try {
     const id = AlarmNative?.takeLastAlarm();
-    return id ? id.split('-')[0] : undefined;
+    return id || undefined;
   } catch {
     return undefined;
   }

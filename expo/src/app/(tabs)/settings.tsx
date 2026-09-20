@@ -22,6 +22,13 @@ const BUILT_IN_RINGTONES = [
   { key: 'clock', titleKey: 'digitalClock', descKey: 'digitalClockDesc' },
 ] as const;
 
+function formatNextTrigger(timestamp: number | null | undefined) {
+  if (!timestamp) return '—';
+  const date = new Date(timestamp);
+  const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return `${date.getDate()}/${date.getMonth() + 1} ${time}`;
+}
+
 export default function Settings() {
   const { t, language } = useTranslation();
   const [preferences, setPreferences] = useState<AppPreferences>(DEFAULT_PREFERENCES);
@@ -99,6 +106,7 @@ export default function Settings() {
       <Row label={t('batteryOptimization')} value={diagnostics ? (diagnostics.batteryOptimized ? t('unrestricted') : t('restricted')) : '…'} onPress={openBatterySettings} />
       <Row label={t('overlayPermission')} value={t('overlayHint')} onPress={openOverlaySettings} />
       <Row label={t('scheduledAlarms')} value={diagnostics ? `${diagnostics.scheduledCount} ${t('triggerCountHint')} — ${t('tapToResync')}` : '…'} onPress={resyncAlarms} />
+      <Row label={t('nextAlarm')} value={formatNextTrigger(diagnostics?.nextTriggerAt)} />
       <Row label={t('nativeTestAlarm')} value={t('nativeTestHint')} onPress={runNativeTest} />
       <Row label={t('backgroundUsage')} value={t('androidSystemSettings')} onPress={() => Linking.openSettings()} />
       {diagnostics?.lastError ? <Text style={[styles.detail, { color: '#C62828', paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }]}>{diagnostics.lastError}</Text> : null}
