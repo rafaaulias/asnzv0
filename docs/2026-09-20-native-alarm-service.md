@@ -58,3 +58,11 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
   - Diagnostik jujur: trigger yang sudah terpicu dihapus dari state; `nextTriggerTime()` baru menampilkan "Alarm berikutnya" di Settings.
 - Fix JS: `schedule(triggerId, weekday, ts)`; `consumeLastNativeAlarm` tidak lagi split '-' (UUID mengandung dash — bug tersembunyi yang membuat active-alarm salah match); lead 2 menit diturunkan ke 10 detik agar sync menjelang waktu alarm tidak mendorong trigger seminggu.
 - Ekspektasi: alarm harian kini bunyi setiap hari tanpa membuka app; bertahan reboot; Settings menampilkan tanggal+jam alarm berikutnya yang harusnya cocok dengan alarm terdekat.
+
+## Iterasi 7: build lokal Windows — notifee maven repo
+- User membangun lokal via `npx expo run:android --variant release` (EAS cloud kena limit kuota; `eas build --local` tidak mendukung Windows).
+- Setup lokal yang dilalui: JDK 17 (Temurin, JAVA_HOME), Android cmdline-tools 22, `ANDROID_HOME=C:\Android`, SDK 35/36 + build-tools, NDK 27 (dua versi, auto-install Gradle).
+- Build gagal setelah 37 menit di `:app:mergeReleaseNativeLibs`: `app.notifee:core:+` tidak ditemukan di google/mavenCentral/jitpack.
+- Penyebab: repo Maven Notifee (`https://notifee.app/maven`) belum dideklarasikan di `android/build.gradle`. Build EAS lolos karena servernya punya akses/cache ke artifact itu.
+- Fix: tambah `maven { url 'https://notifee.app/maven' }` di allprojects repositories.
+- Catatan: build lokal berikutnya cepat (NDK + Gradle + dependencies ter-cache); hanya resolve repo + compile tersisa.
