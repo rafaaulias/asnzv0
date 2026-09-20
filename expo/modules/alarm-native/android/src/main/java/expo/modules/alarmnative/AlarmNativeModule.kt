@@ -33,7 +33,7 @@ class AlarmNativeModule : Module() {
     }
 
     Function("cancel") { id: String ->
-      val context = appContext.reactContext ?: return@Function
+      val context = appContext.reactContext ?: return@Function false
       val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
       val intent = Intent(context, AlarmReceiver::class.java).setAction(AlarmReceiver.ACTION_FIRE)
       val pending = PendingIntent.getBroadcast(
@@ -43,11 +43,13 @@ class AlarmNativeModule : Module() {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_NO_CREATE
       )
       pending?.let { alarmManager.cancel(it) }
+      true
     }
 
     Function("stop") {
-      val context = appContext.reactContext ?: return@Function
+      val context = appContext.reactContext ?: return@Function false
       context.stopService(Intent(context, AlarmService::class.java))
+      true
     }
 
     Function("takeLastAlarm") {

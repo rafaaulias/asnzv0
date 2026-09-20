@@ -17,3 +17,10 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
 
 ## Yang belum sesuai ekspektasi
 - (Menunggu verifikasi user) Build pertama gagal — diperbaiki di commit ini. Jika build berikutnya masih gagal, kirim baris error dari log `Run gradlew`.
+
+## Iterasi 2: build gagal lagi (compileReleaseKotlin)
+- Error persis dari log: `AlarmNativeModule.kt:49:48 Return type mismatch: expected 'Any?', actual 'Unit'`.
+- Penyebab: `return@Function` kosong di lambda `Function("cancel")` / `Function("stop")` yang tipe kembaliannya di-infer `Any?`.
+- Fix: semua fungsi modul konsisten return `Boolean` (`return@Function false` saat context hilang, `true` saat sukses).
+- Sekalian: hapus `runtimeVersion` duplikat di dalam `updates` (error schema expo doctor), deduplikasi `android.permissions` dan iOS `UIBackgroundModes` yang terdaftar dua kali.
+- Ekspektasi: build berikutnya sukses; perilaku fitur tidak berubah.

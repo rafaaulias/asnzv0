@@ -6,7 +6,6 @@
     "version": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/6cfdd03f-96d0-46aa-8abc-767cb46bb1be",
-      "runtimeVersion": { "policy": "appVersion" },
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
@@ -45,22 +44,7 @@
         "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "SYSTEM_ALERT_WINDOW",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
-        "SCHEDULE_EXACT_ALARM",
-        "USE_EXACT_ALARM",
-        "USE_FULL_SCREEN_INTENT",
-        "WAKE_LOCK",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
-        "SYSTEM_ALERT_WINDOW",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "ios": {
@@ -68,8 +52,6 @@
       "infoPlist": {
         "NSMotionUsageDescription": "Anti-Snooze uses motion to verify shake challenges.",
         "UIBackgroundModes": [
-          "audio",
-          "fetch",
           "audio",
           "fetch"
         ]
