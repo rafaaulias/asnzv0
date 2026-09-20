@@ -45,6 +45,37 @@ export async function loadWakeStreak() {
   }
   return streak;
 }
-export async function loadAlarms() { const raw = await AsyncStorage.getItem(ALARMS_KEY); return raw ? JSON.parse(raw) as Alarm[] : DEFAULT_ALARMS; }
+const WEEKDAY_KEYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const INDONESIAN_DAY_KEYS = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'];
+
+// Older app versions stored days as single letters ['S','M','T','W','T','F','S']
+// or Indonesian labels. Unmatched entries made dayToWeekday return -1 for every
+// day, so scheduling was silently skipped — alarms never registered. Normalize
+// once at load so scheduling, display, and the fallback watcher all agree.
+function normalizeDays(days: unknown): string[] {
+  if (!Array.isArray(days)) return [];
+  // Single letters are ambiguous (S = SUN/SAT, T = TUE/THU) except these.
+  const UNIQUE_LETTERS: Record<string, string> = { M: 'MON', W: 'WED', F: 'FRI' };
+  const mapped = days.map((day) => {
+    const value = String(day).trim().toUpperCase();
+    const en = WEEKDAY_KEYS.indexOf(value.slice(0, 3));
+    if (en >= 0) return WEEKDAY_KEYS[en];
+    const id = INDONESIAN_DAY_KEYS.indexOf(value.slice(0, 3));
+    if (id >= 0) return WEEKDAY_KEYS[id];
+    return UNIQUE_LETTERS[value] ?? value;
+  });
+  // A full 7-entry legacy letter array maps positionally to the week, which
+  // also resolves the ambiguous S/T entries.
+  if (mapped.length === 7 && mapped.every((day) => !WEEKDAY_KEYS.includes(day))) {
+    return WEEKDAY_KEYS.filter((_, index) => Boolean(mapped[index]));
+  }
+  return WEEKDAY_KEYS.filter((day) => mapped.includes(day));
+}
+
+export async function loadAlarms() {
+  const raw = await AsyncStorage.getItem(ALARMS_KEY);
+  const alarms = raw ? JSON.parse(raw) as Alarm[] : DEFAULT_ALARMS;
+  return alarms.map((alarm) => ({ ...alarm, days: normalizeDays(alarm.days) }));
+}
 export async function saveAlarms(alarms: Alarm[]) { await AsyncStorage.setItem(ALARMS_KEY, JSON.stringify(alarms)); }
 export function createMathProblem(difficulty: Alarm['mathDifficulty']) { const a = difficulty === 'easy' ? 12 + Math.floor(Math.random() * 19) : 20 + Math.floor(Math.random() * 61); const b = difficulty === 'easy' ? 10 + Math.floor(Math.random() * 21) : 15 + Math.floor(Math.random() * 50); return difficulty === 'hard' ? { question: `${a % 7 + 3} × ${b % 7 + 3} + 12`, answer: (a % 7 + 3) * (b % 7 + 3) + 12 } : { question: `${a} + ${b}`, answer: a + b }; }

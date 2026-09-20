@@ -38,3 +38,11 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
 - Penyebab yang ditemukan lewat review statis: `AlarmManager.AlarmClockInfo(timestamp, showIntent)` dikirim `Intent?` mentah dari `getLaunchIntentForPackage`, padahal konstruktornya menuntut `PendingIntent` — type mismatch saat kompilasi Kotlin.
 - Fix: launch intent dibungkus `PendingIntent.getActivity(...)` sebelum masuk `AlarmClockInfo`.
 - Catatan proses: sandbox tidak punya Android SDK/Gradle dan tidak ter-auth ke EAS, jadi error build hanya bisa diverifikasi dari log EAS yang dikirim user atau review statis. Untuk iterasi berikutnya, selalu minta potongan error dari log `Run gradlew` sebelum menebak.
+
+## Iterasi 5: tes native bunyi, alarm asli diam — AKAR MASALAH SEBENARNYA
+- Laporan user: "Tes alarm native" bunyi di background dan layar mati, tapi alarm asli tidak terjadi apa-apa.
+- Deduksi: receiver/service id-agnostic — tes dan alarm asli lewat jalur native yang sama. Satu-satunya perbedaan: tes tidak melibatkan hari. Kesimpulan: alarm asli tidak pernah terdaftar karena resolusi hari gagal.
+- Bukti: `alarm-form.tsx` memuat dua format hari (`DAY_KEYS` dan `DAY_LETTERS = ['S','M','T','W','T','F','S']`). Alarm lama tersimpan sebagai huruf; `dayToWeekday('S')` → -1 → semua hari ter-filter → `scheduleNativeAlarm` return 0 diam-diam.
+- Fix: `loadAlarms()` kini menormalisasi semua format (EN 3-huruf, label Indonesia MIN/SEN/..., single-letter 7-elemen dipetakan posisional) ke format kanonik saat load — satu titik, mencakup scheduling, tampilan, dan watcher.
+- Pengaman: `scheduleNativeAlarm` kini mencatat error terlihat di Settings jika alarm aktif punya 0 hari valid — bug kelas ini tidak bisa diam-diam lagi.
+- Ekspektasi: setelah update, buka app (focus → sync) → "Scheduled alarms" ≥ 1 → alarm asli bunyi di background seperti tes.

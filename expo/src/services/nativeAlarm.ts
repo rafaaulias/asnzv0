@@ -150,7 +150,13 @@ function nextOccurrence(hour: number, minute: number, weekday: number) {
 // receiver starts a foreground service that plays the ringtone, vibrates, and
 // launches the app — independent of the JS layer and notification channels.
 export async function scheduleNativeAlarm(alarmId: string, hour: number, minute: number, weekdays: number[]) {
-  if (!AlarmNative || weekdays.length === 0) return 0;
+  if (!AlarmNative) return 0;
+  if (weekdays.length === 0) {
+    // An enabled alarm with no resolvable day would otherwise vanish silently.
+    lastScheduleError = `alarm ${alarmId}: no valid days resolved from stored data`;
+    console.log('[v0]', lastScheduleError);
+    return 0;
+  }
   await cancelNativeAlarm(alarmId);
   let scheduled = 0;
   for (const weekday of weekdays) {
