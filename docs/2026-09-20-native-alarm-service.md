@@ -64,5 +64,5 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
 - Setup lokal yang dilalui: JDK 17 (Temurin, JAVA_HOME), Android cmdline-tools 22, `ANDROID_HOME=C:\Android`, SDK 35/36 + build-tools, NDK 27 (dua versi, auto-install Gradle).
 - Build gagal setelah 37 menit di `:app:mergeReleaseNativeLibs`: `app.notifee:core:+` tidak ditemukan di google/mavenCentral/jitpack.
 - Penyebab: repo Maven Notifee (`https://notifee.app/maven`) belum dideklarasikan di `android/build.gradle`. Build EAS lolos karena servernya punya akses/cache ke artifact itu.
-- Fix: tambah `maven { url 'https://notifee.app/maven' }` di allprojects repositories.
+- Fix: tambah repo maven untuk notifee. Percobaan pertama `https://notifee.app/maven` ternyata sudah 404 (host mati) — Notifee 9.x membawa artifact `app.notifee:core` secara lokal di `node_modules/@notifee/react-native/android/libs`. Fix final: `maven { url "$rootDir/../node_modules/@notifee/react-native/android/libs" }`.
 - Catatan: build lokal berikutnya cepat (NDK + Gradle + dependencies ter-cache); hanya resolve repo + compile tersisa.

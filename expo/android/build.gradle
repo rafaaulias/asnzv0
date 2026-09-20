@@ -17,8 +17,9 @@ allprojects {
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
-    // Required by :notifee_react-native — app.notifee:core is only published here.
-    maven { url 'https://notifee.app/maven' }
+    // app.notifee:core ships inside the package since Notifee 9 — the old
+    // https://notifee.app/maven host now returns 404.
+    maven { url "$rootDir/../node_modules/@notifee/react-native/android/libs" }
   }
 }
 
