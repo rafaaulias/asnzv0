@@ -33,3 +33,8 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
   - B: `pendingCount()` native membaca AlarmManager langsung (id dilacak di SharedPreferences) — diagnostik Settings kini jujur lintas restart.
   - C: tombol "Tes alarm native" di Settings — memicu jalur native penuh 30 detik kemudian, tanpa lewat data alarm.
 - Ekspektasi: tes 30 detik bunyi di background; "Scheduled alarms" ≥ 1 setelah resync. Jika tes bunyi tapi alarm biasa tidak, masalah di data/sync; jika tes pun diam, kirim logcat.
+
+## Iterasi 4: build A+B+C gagal (Gradle)
+- Penyebab yang ditemukan lewat review statis: `AlarmManager.AlarmClockInfo(timestamp, showIntent)` dikirim `Intent?` mentah dari `getLaunchIntentForPackage`, padahal konstruktornya menuntut `PendingIntent` — type mismatch saat kompilasi Kotlin.
+- Fix: launch intent dibungkus `PendingIntent.getActivity(...)` sebelum masuk `AlarmClockInfo`.
+- Catatan proses: sandbox tidak punya Android SDK/Gradle dan tidak ter-auth ke EAS, jadi error build hanya bisa diverifikasi dari log EAS yang dikirim user atau review statis. Untuk iterasi berikutnya, selalu minta potongan error dari log `Run gradlew` sebelum menebak.

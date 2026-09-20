@@ -51,7 +51,15 @@ class AlarmNativeModule : Module() {
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     val pending = pendingFire(context, id, create = true) ?: return
     try {
-      val showIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+      // AlarmClockInfo's show intent must be a PendingIntent, not a raw Intent.
+      val showIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
+        PendingIntent.getActivity(
+          context,
+          0,
+          it,
+          PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+      }
       alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(timestampMillis, showIntent), pending)
     } catch (error: SecurityException) {
       if (Build.VERSION.SDK_INT >= 31 && !alarmManager.canScheduleExactAlarms()) {
