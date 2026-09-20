@@ -24,3 +24,12 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
 - Fix: semua fungsi modul konsisten return `Boolean` (`return@Function false` saat context hilang, `true` saat sukses).
 - Sekalian: hapus `runtimeVersion` duplikat di dalam `updates` (error schema expo doctor), deduplikasi `android.permissions` dan iOS `UIBackgroundModes` yang terdaftar dua kali.
 - Ekspektasi: build berikutnya sukses; perilaku fitur tidak berubah.
+
+## Iterasi 3: build sukses tapi alarm background tetap diam (tidak ada apa-apa)
+- Laporan user: app hanya di-home (bukan force-stop), semua permission XOS nyala, hasil: tidak ada notif/suara/layar sama sekali.
+- Analisis: receiver kemungkinan tidak pernah dipicu — dua kandidat: (1) alarm tidak terdaftar di AlarmManager dan diagnostik lama buta (membaca trigger notifee yang sudah dibersihkan), (2) XOS memblokir `setExactAndAllowWhileIdle` untuk non-clock-app.
+- Perbaikan (A+B+C):
+  - A: scheduling diganti ke `AlarmManager.setAlarmClock()` — API khusus app jam, di-whitelist OEM, fallback ke exact/inexact bila SecurityException.
+  - B: `pendingCount()` native membaca AlarmManager langsung (id dilacak di SharedPreferences) — diagnostik Settings kini jujur lintas restart.
+  - C: tombol "Tes alarm native" di Settings — memicu jalur native penuh 30 detik kemudian, tanpa lewat data alarm.
+- Ekspektasi: tes 30 detik bunyi di background; "Scheduled alarms" ≥ 1 setelah resync. Jika tes bunyi tapi alarm biasa tidak, masalah di data/sync; jika tes pun diam, kirim logcat.

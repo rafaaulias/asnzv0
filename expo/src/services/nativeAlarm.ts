@@ -27,7 +27,9 @@ export function dayToWeekday(day: string) {
 
 type AlarmNativeModule = {
   schedule(id: string, timestampMillis: number): boolean;
+  testIn30Seconds(): boolean;
   cancel(id: string): void;
+  pendingCount(): number;
   stop(): void;
   takeLastAlarm(): string;
 };
@@ -53,14 +55,35 @@ export type AlarmDiagnostics = {
 
 export async function getAlarmDiagnostics(): Promise<AlarmDiagnostics> {
   if (isExpoGo || Platform.OS !== 'android') return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: 0, lastError: 'Expo Go unsupported' };
+  // The native count reads AlarmManager directly, so it stays truthful across
+  // app restarts — the in-memory set only covers this session.
+  let nativeCount: number | null = null;
+  try {
+    const count = AlarmNative?.pendingCount();
+    if (typeof count === 'number' && count >= 0) nativeCount = count;
+  } catch {
+    // Module unavailable; fall back to the session set below.
+  }
+  const scheduledCount = nativeCount ?? scheduledIds.size;
   try {
     const settings = await notifee.getNotificationSettings();
     const notifications = settings.authorizationStatus === 1 || settings.authorizationStatus === 2;
     const exactAlarm = settings.android?.alarm === 1;
     const batteryOptimized = !(await notifee.isBatteryOptimizationEnabled().catch(() => true));
-    return { notifications, exactAlarm, batteryOptimized, scheduledCount: scheduledIds.size, lastError: scheduledIds.size === 0 ? lastScheduleError : null };
+    return { notifications, exactAlarm, batteryOptimized, scheduledCount, lastError: scheduledCount === 0 ? lastScheduleError : null };
   } catch (error) {
-    return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: scheduledIds.size, lastError: toMessage(error) };
+    return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount, lastError: toMessage(error) };
+  }
+}
+
+// Fires the full native path (receiver → service → wake screen) in 30 seconds,
+// independent of stored alarm data — isolates scheduling from firing.
+export function testNativeAlarm() {
+  try {
+    return AlarmNative?.testIn30Seconds() ?? false;
+  } catch (error) {
+    lastScheduleError = toMessage(error);
+    return false;
   }
 }
 

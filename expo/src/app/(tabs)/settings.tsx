@@ -5,7 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { AppScreen } from '@/components/app-screen';
 import { colors, radius, spacing, type } from '@/theme';
-import { getAlarmDiagnostics, openBatterySettings, openExactAlarmSettings, openOverlaySettings, requestAlarmPermissions, syncAlarms, type AlarmDiagnostics } from '@/services/nativeAlarm';
+import { getAlarmDiagnostics, openBatterySettings, openExactAlarmSettings, openOverlaySettings, requestAlarmPermissions, syncAlarms, testNativeAlarm, type AlarmDiagnostics } from '@/services/nativeAlarm';
 import { AppPreferences, DEFAULT_PREFERENCES, loadAlarms, loadPreferences, savePreferences } from '@/services/storage';
 import { playSoundEffect } from '@/services/sound-effects';
 import { previewRingtone, stopPreview } from '@/services/alarm-ringer';
@@ -82,6 +82,12 @@ export default function Settings() {
     setDiagnostics(await getAlarmDiagnostics());
   };
 
+  const runNativeTest = () => {
+    void playSoundEffect('click');
+    const ok = testNativeAlarm();
+    console.log('[v0] Native test alarm scheduled:', ok);
+  };
+
   return <AppScreen>
     <Text style={type.largeTitle}>{t('settings')}</Text>
     <Text style={styles.sub}>{t('settingsSubtitle')}</Text>
@@ -93,6 +99,7 @@ export default function Settings() {
       <Row label={t('batteryOptimization')} value={diagnostics ? (diagnostics.batteryOptimized ? t('unrestricted') : t('restricted')) : '…'} onPress={openBatterySettings} />
       <Row label={t('overlayPermission')} value={t('overlayHint')} onPress={openOverlaySettings} />
       <Row label={t('scheduledAlarms')} value={diagnostics ? `${diagnostics.scheduledCount} ${t('triggerCountHint')} — ${t('tapToResync')}` : '…'} onPress={resyncAlarms} />
+      <Row label={t('nativeTestAlarm')} value={t('nativeTestHint')} onPress={runNativeTest} />
       <Row label={t('backgroundUsage')} value={t('androidSystemSettings')} onPress={() => Linking.openSettings()} />
       {diagnostics?.lastError ? <Text style={[styles.detail, { color: '#C62828', paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }]}>{diagnostics.lastError}</Text> : null}
     </View>
