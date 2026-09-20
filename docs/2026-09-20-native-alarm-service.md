@@ -1,24 +1,19 @@
-# 2026-09-20 — Native Alarm Service (foreground service + wake screen)
+# 2026-09-20 — Native Alarm Service (lanjutan: perbaikan build)
 
 ## Context
-Alarm hanya mengirim notifikasi saat terpicu di background; suara dan pembukaan app tidak jalan. Layer JavaScript tidak berjalan saat app dimatikan, dan suara notifikasi/full-screen intent dibatasi XOS.
+Iterasi sebelumnya menambahkan native module `modules/alarm-native` (AlarmManager + foreground service pemutar suara + wake screen) karena alarm tidak berbunyi di background. Build EAS pertama dengan modul ini **gagal** di fase Gradle.
 
-## Permintaan
-- Alarm harus berbunyi dan membuka app saat schedule tiba, termasuk app dimatikan / layar mati.
-- Penjelasan langkah "foreground service pemutar suara + wake screen" sebelum implementasi.
+## Yang diminta
+Perbaiki build yang gagal tanpa mengubah perilaku fitur.
 
 ## Yang dikerjakan
-- Membuat local Expo module `modules/alarm-native` (Kotlin):
-  - `AlarmNativeModule`: schedule/cancel exact alarm via `AlarmManager.setExactAndAllowWhileIdle`, `stop`, `takeLastAlarm`.
-  - `AlarmReceiver`: menerima broadcast alarm → start `AlarmService` (foreground, mediaPlayback) → launch MainActivity (turnScreenOn/showWhenLocked).
-  - `AlarmService`: WakeLock, MediaPlayer loop dengan audio usage ALARM, vibrasi, auto-stop 5 menit, notifikasi persisten.
-- `nativeAlarm.ts` kini menjadwalkan lewat AlarmManager native (bukan notifee trigger). Notifee tetap dipakai untuk permission/diagnostik; trigger notifee lama dibersihkan otomatis.
-- `alarm-ringer.ts` menghentikan service native saat UI ringer mengambil alih.
-- `_layout.tsx` membuka layar alarm dari id yang direkam receiver (cold/warm launch).
+1. **Akar kegagalan build:** `android/build.gradle` modul memakai pola template lama (`applyNativeModulesSettingsGradle`, `safeExtGet`, `apply from: ExpoModulesCorePlugin.gradle`) yang **tidak tersedia** di expo-modules-core SDK 54 — Gradle gagal saat konfigurasi. Ditulis ulang mengikuti pola modul resmi SDK 54 (`expo-module-gradle-plugin`), disamakan dengan `expo-keep-awake`.
+2. **Fix import Kotlin:** `expo.modules.kotlin.ModuleDefinition` → `expo.modules.kotlin.modules.ModuleDefinition` (sesuai API SDK 54).
+3. **Lengkapi permission native** di manifest modul: `WAKE_LOCK` (wajib untuk WakeLock), `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (wajib targetSdk 34 untuk service type mediaPlayback), `VIBRATE`, `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`.
 
 ## Ekspektasi hasil
-- Saat waktu alarm tiba (app mati sekalipun): ringtone bunyi (stream alarm), getar, layar menyala, app terbuka di layar alarm.
-- "Scheduled alarms" di Settings = jumlah trigger native (alarm × hari), stabil.
+- Build EAS sukses.
+- Alarm berbunyi di background/app dimatikan: ringtone via stream ALARM, getar, layar menyala, app terbuka di layar alarm.
 
 ## Yang belum sesuai ekspektasi
-(lihat docs berikutnya setelah pengujian device)
+- (Menunggu verifikasi user) Build pertama gagal — diperbaiki di commit ini. Jika build berikutnya masih gagal, kirim baris error dari log `Run gradlew`.

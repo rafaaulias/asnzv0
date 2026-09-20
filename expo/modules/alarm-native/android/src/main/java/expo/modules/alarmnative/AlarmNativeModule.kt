@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import expo.modules.kotlin.modules.Module
-import expo.modules.kotlin.ModuleDefinition
+import expo.modules.kotlin.modules.ModuleDefinition
 
 class AlarmNativeModule : Module() {
   override fun definition() = ModuleDefinition {
