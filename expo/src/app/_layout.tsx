@@ -17,17 +17,23 @@ export default function RootLayout() {
   useEffect(() => {
     let subscription: { remove: () => void } | null = null;
     let lastFiredKey = '';
-    import('@/services/nativeAlarm').then(({ addAlarmResponseHandler, consumePendingAlarm, checkFiredAlarm }) => {
+    import('@/services/nativeAlarm').then(({ addAlarmResponseHandler, consumePendingAlarm, checkFiredAlarm, consumeLastNativeAlarm }) => {
       subscription = addAlarmResponseHandler((alarmId) => router.push({ pathname: '/active-alarm', params: alarmId ? { alarmId } : {} }));
       const openAlarm = async (alarmId?: string) => router.push({ pathname: '/active-alarm', params: alarmId && alarmId !== 'true' ? { alarmId } : {} });
-      const stateSubscription = AppState.addEventListener('change', async (state) => {
-        if (state !== 'active') return;
-        // Full-screen intent on a warm launch fires no PRESS event; the
-        // displayed-notification check is the only reliable signal.
+      const handleActive = async () => {
+        // The native receiver records the fired alarm id; this covers cold and
+        // warm launches where no PRESS event is delivered.
+        const nativeFired = consumeLastNativeAlarm();
+        if (nativeFired) { await openAlarm(nativeFired); return; }
         const fired = await checkFiredAlarm();
         if (fired !== undefined) { await openAlarm(fired); return; }
         const pending = await consumePendingAlarm();
         if (pending !== undefined) await openAlarm(pending);
+      };
+      void handleActive();
+      const stateSubscription = AppState.addEventListener('change', (state) => {
+        if (state !== 'active') return;
+        void handleActive();
       });
       // In-app fallback: if the OS notification is delayed or dropped (common
       // on aggressive ROMs), the app itself opens the ringer at fire time.

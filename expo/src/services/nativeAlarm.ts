@@ -1,14 +1,13 @@
 import { Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import IntentLauncher from 'expo-intent-launcher';
-import notifee, { AndroidImportance, EventType, RepeatFrequency, TriggerType, type TimestampTrigger } from '@notifee/react-native';
+import { requireNativeModule } from 'expo';
+import notifee, { EventType, type TimestampTrigger, TriggerType } from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const isExpoGo = Constants.appOwnership === 'expo' || Constants.executionEnvironment === 'storeClient';
 const PENDING_ALARM_KEY = 'anti_snooze_pending_alarm_v1';
 const CHANNEL_ID = 'alarms';
-
-const SOUND_RESOURCES = { default: 'radar', soft: 'bell', bright: 'beep' } as const;
 
 const WEEKDAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
 
@@ -26,42 +25,23 @@ export function dayToWeekday(day: string) {
   return WEEKDAY_NAMES.indexOf(day.toUpperCase() as (typeof WEEKDAY_NAMES)[number]);
 }
 
-// Channel creation must be retried on failure: caching a rejected attempt as
-// null permanently disabled all scheduling for the session.
-let channelReady: Promise<typeof notifee | null> | null = null;
+type AlarmNativeModule = {
+  schedule(id: string, timestampMillis: number): boolean;
+  cancel(id: string): void;
+  stop(): void;
+  takeLastAlarm(): string;
+};
 
-async function getNotifee() {
-  if (isExpoGo || Platform.OS !== 'android') return null;
-  if (!channelReady) {
-    channelReady = (async () => {
-      try {
-        await notifee.createChannel({
-          id: CHANNEL_ID,
-          name: 'Alarms',
-          importance: AndroidImportance.HIGH,
-          sound: 'radar',
-          vibration: true,
-          vibrationPattern: [0, 250, 150, 250],
-          bypassDnd: false,
-          visibility: 1,
-        });
-      } catch (error) {
-        // Some OEM ROMs reject extended channel fields; a minimal channel
-        // still fires alarms (with the default sound) instead of none.
-        lastScheduleError = `channel: ${toMessage(error)}`;
-        console.log('[v0] Full channel creation failed, retrying minimal', error);
-        await notifee.createChannel({ id: CHANNEL_ID, name: 'Alarms', importance: AndroidImportance.HIGH });
-      }
-      return notifee;
-    })().catch((error) => {
-      lastScheduleError = `channel: ${toMessage(error)}`;
-      console.log('[v0] Alarm channel creation failed, will retry', error);
-      channelReady = null;
-      return null;
-    });
-  }
-  return channelReady;
+let AlarmNative: AlarmNativeModule | null = null;
+try {
+  if (Platform.OS === 'android' && !isExpoGo) AlarmNative = requireNativeModule<AlarmNativeModule>('AlarmNative');
+} catch {
+  AlarmNative = null;
 }
+
+// Mirrors what is registered with AlarmManager so diagnostics can show a
+// count without a native query API.
+const scheduledIds = new Set<string>();
 
 export type AlarmDiagnostics = {
   notifications: boolean;
@@ -78,10 +58,9 @@ export async function getAlarmDiagnostics(): Promise<AlarmDiagnostics> {
     const notifications = settings.authorizationStatus === 1 || settings.authorizationStatus === 2;
     const exactAlarm = settings.android?.alarm === 1;
     const batteryOptimized = !(await notifee.isBatteryOptimizationEnabled().catch(() => true));
-    const scheduledCount = (await notifee.getTriggerNotificationIds().catch(() => [])).length;
-    return { notifications, exactAlarm, batteryOptimized, scheduledCount, lastError: scheduledCount === 0 ? lastScheduleError : null };
+    return { notifications, exactAlarm, batteryOptimized, scheduledCount: scheduledIds.size, lastError: scheduledIds.size === 0 ? lastScheduleError : null };
   } catch (error) {
-    return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: 0, lastError: toMessage(error) };
+    return { notifications: false, exactAlarm: false, batteryOptimized: false, scheduledCount: scheduledIds.size, lastError: toMessage(error) };
   }
 }
 
@@ -138,89 +117,87 @@ function nextOccurrence(hour: number, minute: number, weekday: number) {
   target.setHours(hour, minute, 0, 0);
   if (delta === 0 && target.getTime() <= now.getTime()) delta = 7;
   target.setDate(now.getDate() + delta);
-  // Notifee rejects timestamps that are not in the future; saving an alarm for
-  // the current minute made creation fail intermittently (random trigger
-  // counts). Keep a two-minute lead and roll a week forward when needed.
+  // AlarmManager tolerates near-future times, but a two-minute lead keeps the
+  // first occurrence predictable when saving during the current minute.
   if (target.getTime() - now.getTime() < 120_000) target.setDate(target.getDate() + 7);
   return Math.floor(target.getTime() / 1000) * 1000;
 }
 
-export async function scheduleNativeAlarm(alarmId: string, hour: number, minute: number, weekdays: number[], sound: 'default' | 'soft' | 'bright' = 'default', vibration = true) {
-  const module = await getNotifee();
-  if (!module || weekdays.length === 0) return 0;
+// Schedules one exact AlarmManager alarm per weekday occurrence. The native
+// receiver starts a foreground service that plays the ringtone, vibrates, and
+// launches the app — independent of the JS layer and notification channels.
+export async function scheduleNativeAlarm(alarmId: string, hour: number, minute: number, weekdays: number[]) {
+  if (!AlarmNative || weekdays.length === 0) return 0;
   await cancelNativeAlarm(alarmId);
-  const soundResource = SOUND_RESOURCES[sound] ?? 'radar';
   let scheduled = 0;
-  await Promise.all(weekdays.map(async (weekday) => {
-    const trigger: TimestampTrigger = { type: TriggerType.TIMESTAMP, timestamp: nextOccurrence(hour, minute, weekday), alarmManager: { allowWhileIdle: true }, repeatFrequency: RepeatFrequency.WEEKLY };
+  for (const weekday of weekdays) {
+    const id = `${alarmId}-${weekday}`;
     try {
-      await module.createTriggerNotification({
-        id: `${alarmId}-${weekday}`,
-        title: 'Anti-Snooze alarm',
-        body: 'Complete your challenge to unlock.',
-        data: { alarmId },
-        android: {
-          channelId: CHANNEL_ID,
-          smallIcon: 'ic_launcher',
-          pressAction: { id: 'default', launchActivity: 'default' },
-          fullScreenAction: { id: 'default', launchActivity: 'default' },
-          loopSound: true,
-          sound: soundResource,
-          ongoing: true,
-          vibrationPattern: vibration ? [0, 250, 150, 250] : undefined,
-        },
-      }, trigger);
+      AlarmNative.schedule(id, nextOccurrence(hour, minute, weekday));
+      scheduledIds.add(id);
       scheduled += 1;
       lastScheduleError = null;
     } catch (error) {
-      // Retry with the minimal fields some ROMs reject; a plain trigger still
-      // wakes the app with the channel sound instead of never firing.
-      try {
-        await module.createTriggerNotification({
-          id: `${alarmId}-${weekday}`,
-          title: 'Anti-Snooze alarm',
-          body: 'Complete your challenge to unlock.',
-          data: { alarmId },
-          android: {
-            channelId: CHANNEL_ID,
-            smallIcon: 'ic_launcher',
-            pressAction: { id: 'default', launchActivity: 'default' },
-            fullScreenAction: { id: 'default', launchActivity: 'default' },
-          },
-        }, trigger);
-        scheduled += 1;
-        lastScheduleError = null;
-      } catch (retryError) {
-        lastScheduleError = toMessage(retryError);
-        console.log('[v0] Failed to schedule alarm trigger', alarmId, weekday, retryError);
-      }
+      scheduledIds.delete(id);
+      lastScheduleError = toMessage(error);
+      console.log('[v0] Failed to schedule native alarm', id, error);
     }
-  }));
-  console.log('[v0] Scheduled', scheduled, 'trigger(s) for alarm', alarmId);
+  }
+  console.log('[v0] Scheduled', scheduled, 'native alarm(s) for', alarmId);
   return scheduled;
 }
 
 export async function cancelNativeAlarm(id: string) {
-  const module = await getNotifee();
-  if (!module) return;
-  const triggers = await module.getTriggerNotificationIds().catch(() => [] as string[]);
-  await Promise.all(triggers.filter((triggerId) => String(triggerId).startsWith(`${id}-`)).map((triggerId) => module.cancelTriggerNotification(triggerId)));
+  if (AlarmNative) {
+    for (let weekday = 0; weekday < 7; weekday += 1) {
+      const triggerId = `${id}-${weekday}`;
+      try {
+        AlarmNative.cancel(triggerId);
+      } catch {
+        // Nothing scheduled under this id; safe to ignore.
+      }
+      scheduledIds.delete(triggerId);
+    }
+  }
+  // Cleanup for triggers created by previous app versions via notifee.
+  const triggers = await notifee.getTriggerNotificationIds().catch(() => [] as string[]);
+  await Promise.all(triggers.filter((triggerId) => String(triggerId).startsWith(`${id}-`)).map((triggerId) => notifee.cancelTriggerNotification(triggerId).catch(() => undefined)));
 }
 
-// Reconciles the native trigger list with the stored alarm list: schedules
-// every enabled alarm, cancels triggers of disabled/deleted ones. Safe to call
+// Reconciles the native alarm list with the stored alarm list: schedules
+// every enabled alarm, cancels alarms of disabled/deleted ones. Safe to call
 // on every app focus.
 export async function syncAlarms(alarms: { id: string; time: string; enabled: boolean; days: string[]; sound: 'default' | 'soft' | 'bright'; vibration: boolean }[]) {
-  const module = await getNotifee();
-  if (!module) return 0;
-  const existing = await module.getTriggerNotificationIds().catch(() => [] as string[]);
-  const keep = new Set(alarms.filter((alarm) => alarm.enabled).flatMap((alarm) => alarm.days.map((day) => `${alarm.id}-${dayToWeekday(day)}`)));
-  await Promise.all(existing.filter((triggerId) => !keep.has(String(triggerId))).map((triggerId) => module.cancelTriggerNotification(triggerId).catch(() => undefined)));
+  if (!AlarmNative) return 0;
+  // Remove any notifee triggers left over from previous versions so alarms
+  // never fire twice.
+  const legacy = await notifee.getTriggerNotificationIds().catch(() => [] as string[]);
+  await Promise.all(legacy.map((triggerId) => notifee.cancelTriggerNotification(triggerId).catch(() => undefined)));
   const results = await Promise.all(alarms.filter((alarm) => alarm.enabled).map(async (alarm) => {
     const [hour, minute] = alarm.time.split(':').map(Number);
-    return scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map(dayToWeekday).filter((day) => day >= 0), alarm.sound, alarm.vibration);
+    return scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map(dayToWeekday).filter((day) => day >= 0));
   }));
   return results.reduce((sum, count) => sum + count, 0);
+}
+
+// Stops the native ringing service (sound, vibration, wake lock).
+export function stopNativeAlarm() {
+  try {
+    AlarmNative?.stop();
+  } catch {
+    // Service already stopped or module unavailable.
+  }
+}
+
+// Returns the alarm id fired by the native receiver since the last call, or
+// undefined. Covers cold and warm launches where no PRESS event is delivered.
+export function consumeLastNativeAlarm() {
+  try {
+    const id = AlarmNative?.takeLastAlarm();
+    return id ? id.split('-')[0] : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 // Detects an alarm notification that launched the app (full-screen intent on a
@@ -243,20 +220,18 @@ export async function checkFiredAlarm() {
 export function addAlarmResponseHandler(onAlarm: (alarmId?: string) => void) {
   if (isExpoGo || Platform.OS !== 'android') return { remove: () => undefined };
   const removers: (() => void)[] = [];
+  removers.push(notifee.onForegroundEvent((event) => {
+    if (event.type !== EventType.PRESS) return;
+    const alarmId = event.detail?.notification?.data?.alarmId;
+    onAlarm(typeof alarmId === 'string' ? alarmId : undefined);
+  }));
+  notifee.onBackgroundEvent(async (event) => {
+    if (event.type !== EventType.PRESS) return;
+    const alarmId = event.detail?.notification?.data?.alarmId;
+    await AsyncStorage.setItem(PENDING_ALARM_KEY, typeof alarmId === 'string' ? alarmId : 'true');
+  });
   void (async () => {
-    const module = await getNotifee();
-    if (!module) return;
-    removers.push(module.onForegroundEvent((event) => {
-      if (event.type !== EventType.PRESS) return;
-      const alarmId = event.detail?.notification?.data?.alarmId;
-      onAlarm(typeof alarmId === 'string' ? alarmId : undefined);
-    }));
-    module.onBackgroundEvent(async (event) => {
-      if (event.type !== EventType.PRESS) return;
-      const alarmId = event.detail?.notification?.data?.alarmId;
-      await AsyncStorage.setItem(PENDING_ALARM_KEY, typeof alarmId === 'string' ? alarmId : 'true');
-    });
-    const initial = await module.getInitialNotification();
+    const initial = await notifee.getInitialNotification();
     if (initial) {
       const alarmId = initial.notification.data?.alarmId;
       await AsyncStorage.removeItem(PENDING_ALARM_KEY);
@@ -272,3 +247,7 @@ export async function consumePendingAlarm() {
   await AsyncStorage.removeItem(PENDING_ALARM_KEY);
   return pending === 'true' ? undefined : pending;
 }
+
+// Kept for reference: notifee timestamp trigger shape used before the native
+// service replaced notification-based alarms.
+export type LegacyTimestampTrigger = TimestampTrigger;

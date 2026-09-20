@@ -11,12 +11,12 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		B742843A5E914307A8E6A6E6 /* radar.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = E2C3C4090582416994C1E409 /* radar.mp3 */; };
-		DB1F66CAD2DC4EC28B0539D3 /* bell.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 9A6E44019CFD4E0AB455CB07 /* bell.mp3 */; };
-		08542C2061304BC58B6510F0 /* beep.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 6A3F3B48D7744853ACF0FCB6 /* beep.mp3 */; };
-		AA665D52B3104BB3B19FB4F6 /* keyboard.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 871801BE80414844AB7FB15C /* keyboard.mp3 */; };
-		4BDACC9C866B48B6B8435484 /* click.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = C69C90428B5241FDAE63F7BB /* click.mp3 */; };
-		3FA851EFC7364A05AD6D0505 /* toggle.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 78F3AA054E9A4F3D97D28F19 /* toggle.mp3 */; };
+		A44063E473D8429EBD61FDE4 /* radar.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = B10F6AD899C84764801F7EE2 /* radar.mp3 */; };
+		DE157A726F79492CB673B7AF /* bell.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 2F6BE692FE714DE2A5AC58B3 /* bell.mp3 */; };
+		482EE985F4284818BDB8642C /* beep.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 0F72BFBF44474D49AAE69DF5 /* beep.mp3 */; };
+		53B4F0105AB34A5AB82C1FE8 /* keyboard.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 26EBE94458A84908B9870895 /* keyboard.mp3 */; };
+		45808EF156C943299DE24983 /* click.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 2E08FCDCD7BA4562AEA04B8D /* click.mp3 */; };
+		2494D40B21494F3B8EC1D1D2 /* toggle.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 28B6850F85B4406D8637FCD4 /* toggle.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,12 +28,12 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = AntiSnooze/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* AntiSnooze-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "AntiSnooze-Bridging-Header.h"; path = "AntiSnooze/AntiSnooze-Bridging-Header.h"; sourceTree = "<group>"; };
-		E2C3C4090582416994C1E409 /* radar.mp3 */ = {isa = PBXFileReference; name = "radar.mp3"; path = "AntiSnooze/radar.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		9A6E44019CFD4E0AB455CB07 /* bell.mp3 */ = {isa = PBXFileReference; name = "bell.mp3"; path = "AntiSnooze/bell.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		6A3F3B48D7744853ACF0FCB6 /* beep.mp3 */ = {isa = PBXFileReference; name = "beep.mp3"; path = "AntiSnooze/beep.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		871801BE80414844AB7FB15C /* keyboard.mp3 */ = {isa = PBXFileReference; name = "keyboard.mp3"; path = "AntiSnooze/keyboard.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		C69C90428B5241FDAE63F7BB /* click.mp3 */ = {isa = PBXFileReference; name = "click.mp3"; path = "AntiSnooze/click.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		78F3AA054E9A4F3D97D28F19 /* toggle.mp3 */ = {isa = PBXFileReference; name = "toggle.mp3"; path = "AntiSnooze/toggle.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		B10F6AD899C84764801F7EE2 /* radar.mp3 */ = {isa = PBXFileReference; name = "radar.mp3"; path = "AntiSnooze/radar.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		2F6BE692FE714DE2A5AC58B3 /* bell.mp3 */ = {isa = PBXFileReference; name = "bell.mp3"; path = "AntiSnooze/bell.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		0F72BFBF44474D49AAE69DF5 /* beep.mp3 */ = {isa = PBXFileReference; name = "beep.mp3"; path = "AntiSnooze/beep.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		26EBE94458A84908B9870895 /* keyboard.mp3 */ = {isa = PBXFileReference; name = "keyboard.mp3"; path = "AntiSnooze/keyboard.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		2E08FCDCD7BA4562AEA04B8D /* click.mp3 */ = {isa = PBXFileReference; name = "click.mp3"; path = "AntiSnooze/click.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		28B6850F85B4406D8637FCD4 /* toggle.mp3 */ = {isa = PBXFileReference; name = "toggle.mp3"; path = "AntiSnooze/toggle.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,12 +56,12 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				E2C3C4090582416994C1E409 /* radar.mp3 */,
-				9A6E44019CFD4E0AB455CB07 /* bell.mp3 */,
-				6A3F3B48D7744853ACF0FCB6 /* beep.mp3 */,
-				871801BE80414844AB7FB15C /* keyboard.mp3 */,
-				C69C90428B5241FDAE63F7BB /* click.mp3 */,
-				78F3AA054E9A4F3D97D28F19 /* toggle.mp3 */,
+				B10F6AD899C84764801F7EE2 /* radar.mp3 */,
+				2F6BE692FE714DE2A5AC58B3 /* bell.mp3 */,
+				0F72BFBF44474D49AAE69DF5 /* beep.mp3 */,
+				26EBE94458A84908B9870895 /* keyboard.mp3 */,
+				2E08FCDCD7BA4562AEA04B8D /* click.mp3 */,
+				28B6850F85B4406D8637FCD4 /* toggle.mp3 */,
 			);
 			name = AntiSnooze;
 			sourceTree = "<group>";
@@ -173,12 +173,12 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				B742843A5E914307A8E6A6E6 /* radar.mp3 in Resources */,
-				DB1F66CAD2DC4EC28B0539D3 /* bell.mp3 in Resources */,
-				08542C2061304BC58B6510F0 /* beep.mp3 in Resources */,
-				AA665D52B3104BB3B19FB4F6 /* keyboard.mp3 in Resources */,
-				4BDACC9C866B48B6B8435484 /* click.mp3 in Resources */,
-				3FA851EFC7364A05AD6D0505 /* toggle.mp3 in Resources */,
+				A44063E473D8429EBD61FDE4 /* radar.mp3 in Resources */,
+				DE157A726F79492CB673B7AF /* bell.mp3 in Resources */,
+				482EE985F4284818BDB8642C /* beep.mp3 in Resources */,
+				53B4F0105AB34A5AB82C1FE8 /* keyboard.mp3 in Resources */,
+				45808EF156C943299DE24983 /* click.mp3 in Resources */,
+				2494D40B21494F3B8EC1D1D2 /* toggle.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

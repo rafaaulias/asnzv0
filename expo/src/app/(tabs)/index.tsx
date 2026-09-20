@@ -115,7 +115,7 @@ export default function AlarmsScreen() {
   saveAlarms(next);
   if (alarm) {
     const [hour, minute] = alarm.time.split(':').map(Number);
-    if (enabled) void scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map(dayToWeekday).filter((day) => day >= 0), alarm.sound, alarm.vibration);
+    if (enabled) void scheduleNativeAlarm(alarm.id, hour, minute, alarm.days.map(dayToWeekday).filter((day) => day >= 0));
     else cancelNativeAlarm(alarm.id).catch(() => undefined);
   }
   };

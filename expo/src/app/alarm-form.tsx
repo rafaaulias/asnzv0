@@ -106,7 +106,7 @@ export default function AlarmForm() {
     await saveAlarms(next);
     if (newAlarm.enabled) {
       const granted = await requestAlarmPermissions();
-      if (granted) await scheduleNativeAlarm(newAlarm.id, hour24, Number(minute), DAY_KEYS.map((_, index) => (days[index] ? index : -1)).filter((day) => day >= 0), sound, vibration);
+        if (granted) await scheduleNativeAlarm(newAlarm.id, hour24, Number(minute), DAY_KEYS.map((_, index) => (days[index] ? index : -1)).filter((day) => day >= 0));
     }
     router.back();
   };

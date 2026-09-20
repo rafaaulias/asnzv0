@@ -1,5 +1,6 @@
 import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
 import { loadAlarms, loadPreferences } from '@/services/storage';
+import { stopNativeAlarm } from '@/services/nativeAlarm';
 
 const RINGTONES = {
   default: require('../../assets/sounds/radar.mp3'),
@@ -23,6 +24,9 @@ async function resolveSource(alarmId?: string) {
 }
 
 export async function startRinging(alarmId?: string) {
+  // The native foreground service rings until the UI takes over; hand off so
+  // the two players never overlap.
+  stopNativeAlarm();
   await stopRinging();
   const { source, volume } = await resolveSource(alarmId);
   player = createAudioPlayer(source);
@@ -32,6 +36,7 @@ export async function startRinging(alarmId?: string) {
 }
 
 export async function stopRinging() {
+  stopNativeAlarm();
   if (!player) return;
   const current = player;
   player = null;
