@@ -72,3 +72,10 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
 - Build lokal Windows sukses setelah: pindah project ke path tanpa spasi (`D:\asnzv0` — spasi di path memicu bug `ninja: manifest still dirty`), hapus cache `android/app/.cxx` yang menyimpan path lama, dan repo maven notifee lokal.
 - Setup build lokal user: JDK 17 Temurin, cmdline-tools 22, `ANDROID_HOME=C:\Android`, SDK 35/36, NDK 27. Perintah: `npx expo run:android --variant release` dari `D:\asnzv0\expo`.
 - Alur iterasi ke depan: JS-only → `eas update --branch preview`; native → build lokal (gratis, ±5-15 menit). EAS Build cloud menunggu reset kuota 1 Okt.
+
+## Iterasi 8: docs presentasi + UI ringtone & stats (JS-only, via eas update)
+- Docs baru `docs/app-overview.md`: ringkasan app, fitur, cara kerja alarm (tech stack), streak, alur, penyimpanan data, Q&A + pertanyaan jebakan.
+- Ringtone: dari 1 slot kustom jadi library multi-ringtone (`customRingtones[]` di preferences, migrasi otomatis dari slot lama). UI baru terinspirasi picker alarm Android (grup "Nada deringmu" + "Tambah baru", radio indicator) dalam palet light app. Upload pakai nama file unik (timestamp) — tidak menimpa.
+- Padding list settings dirapikan: semua row seragam (minHeight 62, separator konsisten), radio di kanan, tombol Tes/trash sejajar; hapus row kustom hitam besar yang bikin berantakan.
+- Stats: "0% success rate" hardcoded diganti rata-rata waktu per challenge (data nyata dari durationSeconds) — success rate tidak bisa dihitung karena attempts tidak dicatat.
+- Semua JS-only → dikirim via `eas update --branch preview`, tanpa rebuild.

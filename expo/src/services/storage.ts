@@ -10,9 +10,18 @@ const PERMISSIONS_SEEN_KEY = 'anti_snooze_permissions_seen_v1';
 export async function hasSeenPermissions() { return (await AsyncStorage.getItem(PERMISSIONS_SEEN_KEY)) === 'true'; }
 export async function markPermissionsSeen() { await AsyncStorage.setItem(PERMISSIONS_SEEN_KEY, 'true'); }
 export type RingtoneChoice = 'radar' | 'siren' | 'clock' | 'custom';
-export type AppPreferences = { language: 'en' | 'id'; haptics: boolean; soundEffects: boolean; keepAwake: boolean; ringtone: RingtoneChoice; customRingtoneName?: string; customRingtoneUri?: string };
-export const DEFAULT_PREFERENCES: AppPreferences = { language: 'en', haptics: true, soundEffects: true, keepAwake: false, ringtone: 'radar' };
-export async function loadPreferences() { const raw = await AsyncStorage.getItem(PREFERENCES_KEY); return raw ? { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) } as AppPreferences : DEFAULT_PREFERENCES; }
+export type CustomRingtone = { name: string; uri: string };
+export type AppPreferences = { language: 'en' | 'id'; haptics: boolean; soundEffects: boolean; keepAwake: boolean; ringtone: RingtoneChoice; customRingtoneName?: string; customRingtoneUri?: string; customRingtones?: CustomRingtone[] };
+export const DEFAULT_PREFERENCES: AppPreferences = { language: 'en', haptics: true, soundEffects: true, keepAwake: false, ringtone: 'radar', customRingtones: [] };
+export async function loadPreferences() {
+  const raw = await AsyncStorage.getItem(PREFERENCES_KEY);
+  const preferences = raw ? { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) } as AppPreferences : DEFAULT_PREFERENCES;
+  // Older versions stored a single custom ringtone; promote it into the library.
+  if (preferences.customRingtoneUri && !(preferences.customRingtones ?? []).some((ringtone) => ringtone.uri === preferences.customRingtoneUri)) {
+    preferences.customRingtones = [...(preferences.customRingtones ?? []), { name: preferences.customRingtoneName ?? 'Custom', uri: preferences.customRingtoneUri }];
+  }
+  return preferences;
+}
 export async function savePreferences(preferences: AppPreferences) { await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences)); }
 
 export type CompletionRecord = { date: string; challengeType: ChallengeType; durationSeconds: number };
@@ -29,7 +38,9 @@ export async function loadCompletionStats() {
   const records = (raw ? JSON.parse(raw) as (string | CompletionRecord)[] : []).map((record) => typeof record === 'string' ? { date: record, challengeType: 'math' as const, durationSeconds: 0 } : record);
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, index) => { const date = new Date(today); date.setHours(0, 0, 0, 0); date.setDate(today.getDate() - (6 - index)); return date.toISOString().slice(0, 10); });
-  return { dates: days.map((date) => records.some((record) => record.date === date)), math: records.filter((record) => record.challengeType === 'math').length, shake: records.filter((record) => record.challengeType === 'shake').length, averageSeconds: records.length ? Math.round(records.reduce((sum, record) => sum + record.durationSeconds, 0) / records.length) : 0 };
+  const typed = records.filter((record): record is CompletionRecord => typeof record !== 'string');
+  const average = (list: CompletionRecord[]) => list.length ? Math.round(list.reduce((sum, record) => sum + record.durationSeconds, 0) / list.length) : 0;
+  return { dates: days.map((date) => records.some((record) => record.date === date)), math: typed.filter((record) => record.challengeType === 'math').length, shake: typed.filter((record) => record.challengeType === 'shake').length, averageSeconds: average(typed), mathAvgSeconds: average(typed.filter((record) => record.challengeType === 'math')), shakeAvgSeconds: average(typed.filter((record) => record.challengeType === 'shake')) };
 }
 
 export async function loadWakeStreak() {

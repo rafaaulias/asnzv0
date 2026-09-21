@@ -11,7 +11,7 @@ export default function Stats() {
   const { t, weekLabels } = useTranslation();
   const days = weekLabels;
   const [streak, setStreak] = useState(0);
-  const [stats, setStats] = useState({ dates: [false, false, false, false, false, false, false], math: 0, shake: 0, averageSeconds: 0 });
+  const [stats, setStats] = useState({ dates: [false, false, false, false, false, false, false], math: 0, shake: 0, averageSeconds: 0, mathAvgSeconds: 0, shakeAvgSeconds: 0 });
   useFocusEffect(useCallback(() => {
     loadWakeStreak().then(setStreak);
     loadCompletionStats().then(setStats);
@@ -44,16 +44,18 @@ export default function Stats() {
           <Text style={styles.cardTitle}>{t('challengeEfficiency')}</Text>
           <View style={styles.fresh}><Ionicons name="flash-outline" size={13} color={colors.ink} /><Text style={styles.freshText}>{stats.averageSeconds}s {t('avgTime')}</Text></View>
         </View>
-        <Challenge icon="calculator-outline" title={t('mathPuzzleTitle')} subtitle={`${stats.math} ${t('challengeCompletions')}`} />
-        <Challenge icon="phone-portrait-outline" title={t('shakePhoneTitle')} subtitle={`${stats.shake} ${t('challengeCompletions')}`} />
+        <Challenge icon="calculator-outline" title={t('mathPuzzleTitle')} subtitle={`${stats.math} ${t('challengeCompletions')}`} metric={`${stats.mathAvgSeconds}s`} />
+        <Challenge icon="phone-portrait-outline" title={t('shakePhoneTitle')} subtitle={`${stats.shake} ${t('challengeCompletions')}`} metric={`${stats.shakeAvgSeconds}s`} />
       </View>
     </AppScreen>
   );
 }
 
-function Challenge({ icon, title, subtitle }: { icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string }) {
+// Success rate is not computable — only completions are recorded, never failed
+// attempts — so each challenge shows its real average completion time instead.
+function Challenge({ icon, title, subtitle, metric }: { icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string; metric: string }) {
   const { t } = useTranslation();
-  return <View style={styles.challenge}><View style={styles.challengeIcon}><Ionicons name={icon} size={18} color={colors.paper} /></View><View style={styles.challengeCopy}><Text style={styles.challengeTitle}>{title}</Text><Text style={styles.challengeSubtitle}>{subtitle}</Text></View><View style={styles.rate}><Text style={styles.rateValue}>0%</Text><Text style={styles.rateLabel}>{t('successRate')}</Text></View></View>;
+  return <View style={styles.challenge}><View style={styles.challengeIcon}><Ionicons name={icon} size={18} color={colors.paper} /></View><View style={styles.challengeCopy}><Text style={styles.challengeTitle}>{title}</Text><Text style={styles.challengeSubtitle}>{subtitle}</Text></View><View style={styles.rate}><Text style={styles.rateValue}>{metric}</Text><Text style={styles.rateLabel}>{t('avgTime')}</Text></View></View>;
 }
 
 const styles = StyleSheet.create({
