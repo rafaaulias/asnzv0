@@ -66,3 +66,9 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
 - Penyebab: repo Maven Notifee (`https://notifee.app/maven`) belum dideklarasikan di `android/build.gradle`. Build EAS lolos karena servernya punya akses/cache ke artifact itu.
 - Fix: tambah repo maven untuk notifee. Percobaan pertama `https://notifee.app/maven` ternyata sudah 404 (host mati) — Notifee 9.x membawa artifact `app.notifee:core` secara lokal di `node_modules/@notifee/react-native/android/libs`. Fix final: `maven { url "$rootDir/../node_modules/@notifee/react-native/android/libs" }`.
 - Catatan: build lokal berikutnya cepat (NDK + Gradle + dependencies ter-cache); hanya resolve repo + compile tersisa.
+
+## HASIL AKHIR: VERIFIED WORKING (2026-09-21)
+- User mengonfirmasi alarm asli bekerja: bunyi di background dan layar mati, auto-repeat mingguan, boot restore.
+- Build lokal Windows sukses setelah: pindah project ke path tanpa spasi (`D:\asnzv0` — spasi di path memicu bug `ninja: manifest still dirty`), hapus cache `android/app/.cxx` yang menyimpan path lama, dan repo maven notifee lokal.
+- Setup build lokal user: JDK 17 Temurin, cmdline-tools 22, `ANDROID_HOME=C:\Android`, SDK 35/36, NDK 27. Perintah: `npx expo run:android --variant release` dari `D:\asnzv0\expo`.
+- Alur iterasi ke depan: JS-only → `eas update --branch preview`; native → build lokal (gratis, ±5-15 menit). EAS Build cloud menunggu reset kuota 1 Okt.
