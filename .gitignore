@@ -6,6 +6,9 @@ __v0_jsx-dev-runtime.ts
 .v0-trash/
 .vercel/
 
+# React Native app (lives in its own repo)
+expo/
+
 # Environment variables
 .env*.local
 
