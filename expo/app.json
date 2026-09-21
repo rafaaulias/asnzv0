@@ -7,7 +7,8 @@
     "updates": {
       "url": "https://u.expo.dev/6cfdd03f-96d0-46aa-8abc-767cb46bb1be",
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "requestHeaders": { "expo-channel-name": "preview" }
     },
     "orientation": "portrait",
     "userInterfaceStyle": "light",

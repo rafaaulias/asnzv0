@@ -79,3 +79,9 @@ Perbaiki build yang gagal tanpa mengubah perilaku fitur.
 - Padding list settings dirapikan: semua row seragam (minHeight 62, separator konsisten), radio di kanan, tombol Tes/trash sejajar; hapus row kustom hitam besar yang bikin berantakan.
 - Stats: "0% success rate" hardcoded diganti rata-rata waktu per challenge (data nyata dari durationSeconds) — success rate tidak bisa dihitung karena attempts tidak dicatat.
 - Semua JS-only → dikirim via `eas update --branch preview`, tanpa rebuild.
+
+## Iterasi 9: eas update pada APK build lokal — channel header
+- APK lokal (`expo run:android`) tidak meng-embed channel EAS Update: manifest hanya berisi URL + runtimeVersion, tanpa `expo-channel-name` header → request update tidak bisa di-resolve ke branch `preview`.
+- Terverifikasi dari source expo-updates: channel dikirim sebagai request header dari meta-data `expo.modules.updates.UPDATES_CONFIGURATION_REQUEST_HEADERS_KEY` (JSON), yang biasanya di-inject EAS Build dari `eas.json` build profile.
+- Fix: tambah meta-data tersebut di `android/app/src/main/AndroidManifest.xml` + `requestHeaders: {"expo-channel-name": "preview"}` di `app.json` (agar prebuild/EAS berikutnya konsisten).
+- Perubahan native → butuh satu rebuild lokal terakhir. Setelah itu `eas update --branch preview` bekerja untuk semua perubahan JS.

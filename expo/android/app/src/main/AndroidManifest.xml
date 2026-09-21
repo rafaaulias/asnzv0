@@ -27,6 +27,9 @@
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATE_URL" android:value="https://u.expo.dev/6cfdd03f-96d0-46aa-8abc-767cb46bb1be"/>
+    <!-- EAS Build injects the update channel automatically, but local `expo run:android`
+         builds do not — without this header the app cannot resolve the preview branch. -->
+    <meta-data android:name="expo.modules.updates.UPDATES_CONFIGURATION_REQUEST_HEADERS_KEY" android:value='{"expo-channel-name":"preview"}'/>
     <service android:name="expo.modules.audio.service.AudioControlsService" android:exported="false" android:foregroundServiceType="mediaPlayback">
       <intent-filter>
         <action android:name="androidx.media3.session.MediaSessionService"/>
